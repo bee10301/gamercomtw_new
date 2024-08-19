@@ -10,8 +10,8 @@
 // @icon         https://home.gamer.com.tw/favicon.ico
 // @grant        none
 // @license      GPL
-// @downloadURL https://update.greasyfork.org/scripts/375498/%E5%B7%B4%E5%93%88%E5%A7%86%E7%89%B9_%E6%96%B0%E7%89%88B%E9%A0%81%E6%9D%BF%E5%8B%99%E5%8A%9F%E8%83%BD.user.js
-// @updateURL https://update.greasyfork.org/scripts/375498/%E5%B7%B4%E5%93%88%E5%A7%86%E7%89%B9_%E6%96%B0%E7%89%88B%E9%A0%81%E6%9D%BF%E5%8B%99%E5%8A%9F%E8%83%BD.meta.js
+// @downloadURL  https://gamercomtwnew.bee.moe/index.js
+// @updateURL    https://gamercomtwnew.bee.moe/meta.js
 // ==/UserScript==
 
 (function () {
