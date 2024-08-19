@@ -10,7 +10,7 @@
 // @icon         https://home.gamer.com.tw/favicon.ico
 // @grant        none
 // @license      GPL
-// @downloadURL  https://gamercomtwnew.bee.moe/index.js
+// @downloadURL  https://gamercomtwnew.bee.moe/user.js
 // @updateURL    https://gamercomtwnew.bee.moe/meta.js
 // ==/UserScript==
 
