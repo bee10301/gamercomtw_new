@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      5.2
+// @version      5.3
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -37,23 +37,31 @@ function checkFirstRun(reset = false) {
     // new_design_LRSwitch > 左右對調（聊天室在左方，讓文章標題在螢幕中間）
     // bee_select_color > 勾選文章時的顏色（可含有透明度屬性）
     // preview_LR > 即時瀏覽視窗的位置
-    const settings = [
-        { key: "isFirstRun", defaultValue: "false" },
-        { key: "add_function", defaultValue: "true" },
-        { key: "preview_auto", defaultValue: "true" },
-        { key: "preview_wait_load", defaultValue: "false" },
-        { key: "preview_size", defaultValue: "65%" },
-        { key: "new_design", defaultValue: "true" },
-        { key: "new_design_box", defaultValue: "80%" },
-        { key: "new_design_box_Left", defaultValue: "70%" },
-        { key: "new_design_box_Right", defaultValue: "25%" },
-        { key: "new_design_LRSwitch", defaultValue: "true" },
-        { key: "bee_select_color", defaultValue: "#000000b3" },
-        { key: "addBorderInPicMode", defaultValue: "true" },
-        { key: "showTips", defaultValue: "true" },
-        { key: "preview_LR", defaultValue: "true" },
-        { key: "showAbuse", defaultValue: "true" },
-        // Add other settings as needed
+    const settings = [{key: "isFirstRun", defaultValue: "false"}, {
+        key: "add_function",
+        defaultValue: "true"
+    }, {key: "preview_auto", defaultValue: "true"}, {
+        key: "preview_wait_load",
+        defaultValue: "false"
+    }, {key: "preview_size", defaultValue: "65%"}, {key: "new_design", defaultValue: "true"}, {
+        key: "new_design_box",
+        defaultValue: "80%"
+    }, {key: "new_design_box_Left", defaultValue: "70%"}, {
+        key: "new_design_box_Right",
+        defaultValue: "25%"
+    }, {key: "new_design_LRSwitch", defaultValue: "true"}, {
+        key: "bee_select_color",
+        defaultValue: "#000000b3"
+    }, {key: "addBorderInPicMode", defaultValue: "true"}, {key: "showTips", defaultValue: "true"}, {
+        key: "preview_LR",
+        defaultValue: "true"
+    }, {key: "showAbuse", defaultValue: "true"}, {key: "addSummaryBtn", defaultValue: "false"}, {
+        key: "oaiBaseUrl",
+        defaultValue: "https://api.openai.com"
+    }, {key: "oaiKey", defaultValue: "sk-yourKey"}, {
+        key: "oaiModel",
+        defaultValue: "gpt-3.5-turbo"
+    }, // Add other settings as needed
     ];
 
     settings.forEach(setting => {
@@ -102,10 +110,18 @@ function addSettingElement() {
         lastManagementItem.appendChild(createItemCard('addBorderInPicMode', '縮圖列表模式中，加上分隔線'));
 
         lastManagementItem.appendChild(createItemCard('showAbuse', '有檢舉時，自動以即時瀏覽開啟'));
-        // createItemCard  會因為 id===bee_select_color 而增加寬度
+        //summary
+        lastManagementItem.appendChild(createItemCard('addSummaryBtn', '自適型版面（根據下方自定比例適應）'));
         lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'bee_select_color', labelText: '勾選文章時的顏色（可含有透明度屬性）'
+            inputId: 'oaiBaseUrl', labelText: '　├　oai URL'
         }));
+        lastManagementItem.appendChild(createItemCard(null, null, {
+            inputId: 'oaiModel', labelText: '　├　oai model'
+        }));
+        lastManagementItem.appendChild(createItemCard(null, null, {
+            inputId: 'oaiKey', labelText: '　└　oai key'
+        }));
+        // createItemCard  會因為 id===bee_select_color 而增加寬度
         lastManagementItem.appendChild(createItemCard('showTips', '重新觀看TIPs'));
 
     }
@@ -119,7 +135,7 @@ function createItemCard(inputId, labelText, additionalContent = null) {
 
     const checkGroup = document.createElement('div');
     checkGroup.className = 'check-group';
-    checkGroup.style.margin = '0.6rem 0 0.2rem 0.7rem';
+    checkGroup.style.margin = '0rem 0 0.1rem 0.7rem';
 
     if (inputId) {
         const input = document.createElement('input');
@@ -167,7 +183,7 @@ function createItemCard(inputId, labelText, additionalContent = null) {
         input.id = additionalContent.inputId;
         input.type = 'text';
         input.size = 25;
-        input.style.margin = '10px';
+        input.style.margin = '0px';
         input.style.width = additionalContent.inputId === "bee_select_color" ? '120px' : '70px';
 
         // 如果 localStorage 有儲存的值，則設置為該值
@@ -187,12 +203,17 @@ function createItemCard(inputId, labelText, additionalContent = null) {
 
 
 function worker_cPage() {
-    if (window.location.href.includes('forum.gamer.com.tw/C.php')) {
-        let styleSheet = document.createElement('style');
-        document.head.appendChild(styleSheet);
-        let sheet = styleSheet.sheet;
-        sheet.insertRule('.managertools { position: fixed; bottom: 0; right: 0; z-index: 100; }', 0);
+    if (!window.location.href.includes('forum.gamer.com.tw/C.php')) {
+        return;
     }
+    let styleSheet = document.createElement('style');
+    document.head.appendChild(styleSheet);
+    let sheet = styleSheet.sheet;
+    sheet.insertRule('.managertools { position: fixed; bottom: 0; right: 0; z-index: 100; }', 0);
+    if (localStorage.getItem("addSummaryBtn") === "false") {
+        return;
+    }
+    postAddBtn();
 }
 
 
@@ -536,13 +557,11 @@ function bPage_previewAuto() {
             return false;
         });
     });
-    let bListMainTitlesPages = document.querySelectorAll(!picMode ? '#BH-master > form > div > table > tbody > tr > td.b-list__main > span > a'
-        : '#BH-master > form > div > table > tbody > tr > td.b-list__main > div > div > span > span');
+    let bListMainTitlesPages = document.querySelectorAll(!picMode ? '#BH-master > form > div > table > tbody > tr > td.b-list__main > span > a' : '#BH-master > form > div > table > tbody > tr > td.b-list__main > div > div > span > span');
     bListMainTitlesPages.forEach((bListMainTitlePage) => {
         bListMainTitlePage.addEventListener('click', (e) => {
             e.preventDefault();
-            let href = bListMainTitlePage.getAttribute(!picMode ? 'href'
-                : 'data-page');
+            let href = bListMainTitlePage.getAttribute(!picMode ? 'href' : 'data-page');
             openInFrame(`https://forum.gamer.com.tw/${href}`);
             return false;
         });
@@ -631,8 +650,7 @@ function loadTips() {
             allowClose: false,
             nextBtnText: '▶',
             prevBtnText: '◀',
-            doneBtnText: '好耶',
-            /*onCloseClick: () => {
+            doneBtnText: '好耶', /*onCloseClick: () => {
                 driverObj.destroy();
             },*/
             showProgress: true,
@@ -641,63 +659,49 @@ function loadTips() {
                     title: '客製化設定', description: '在這裡可以進行詳細的個人設定，設定變更後需要【重新整理】頁面才會生效。'
                 }
             }, {
-                element: picMode ? '#BH-master > form > div > table > tbody > tr > td.b-list__main > div > div > p'
-                    : '#BH-master > form > div > table > tbody > tr > td.b-list__main > a',
+                element: picMode ? '#BH-master > form > div > table > tbody > tr > td.b-list__main > div > div > p' : '#BH-master > form > div > table > tbody > tr > td.b-list__main > a',
                 popover: {
                     title: '即時瀏覽',
                     description: '如果開啟「點擊時使用即時預覽」，文章標題的跳轉會以即時預覽的方式啟動。',
                     side: "bottom",
                 },
             }, {
-                element: '#BH-master > form > div > table > tbody > tr > td.b-list__main',
-                popover: {
+                element: '#BH-master > form > div > table > tbody > tr > td.b-list__main', popover: {
                     title: '快速選取',
                     description: '除了文章標題、縮圖模式的預覽圖，其他區域可以觸發快速選取。功能等同左方的勾選方塊。',
                     side: "bottom",
                     onNextClick: () => {
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_preview')
-                            .style.display = 'inline-block';
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_open_new_wd')
-                            .style.display = 'inline-block';
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_link')
-                            .style.display = 'inline-block';
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_preview').style.display = 'inline-block';
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_open_new_wd').style.display = 'inline-block';
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_link').style.display = 'inline-block';
                         driverObj.moveNext();
                     }
                 },
             }, {
-                element: picMode ? '#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3)'
-                    : '#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3)',
+                element: picMode ? '#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3)' : '#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3)',
                 popover: {
                     title: '功能按鈕',
                     description: '如果開啟「插入功能按鈕」，指標指向的文章後方會出現三個功能按鈕，分別是「即時預覽」「新分頁開啟」「複製連結」。',
                     side: "bottom",
                     onNextClick: () => {
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_preview')
-                            .style.display = 'none';
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_open_new_wd')
-                            .style.display = 'none';
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_link')
-                            .style.display = 'none';
-                        document.querySelector(picMode ? '#BH-master > form > div > table > tbody > tr:nth-child(2) > td.b-list__main > div > a'
-                            : '#BH-master > form > div > table > tbody > tr:nth-child(2) > td.b-list__main > a').click();
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_preview').style.display = 'none';
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_open_new_wd').style.display = 'none';
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_link').style.display = 'none';
+                        document.querySelector(picMode ? '#BH-master > form > div > table > tbody > tr:nth-child(2) > td.b-list__main > div > a' : '#BH-master > form > div > table > tbody > tr:nth-child(2) > td.b-list__main > a').click();
 
                         driverObj.moveNext();
                     }
                 },
             }, {
-                element: '#BH-master > form > section:last-child > div',
-                popover: {
+                element: '#BH-master > form > section:last-child > div', popover: {
                     title: '功能選單',
                     description: '快速預覽視窗中，功能選單會漂浮在下方，方便使用！',
                     side: "bottom",
                     onPrevClick: () => {
                         document.querySelector('#BH-menu-path').click();
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_preview')
-                            .style.display = 'inline-block';
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_open_new_wd')
-                            .style.display = 'inline-block';
-                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_link')
-                            .style.display = 'inline-block';
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_preview').style.display = 'inline-block';
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_open_new_wd').style.display = 'inline-block';
+                        document.querySelector('#BH-master > form > div > table > tbody > tr:nth-child(2) > td:nth-child(3) > a.btn-icon.btn-icon--inverse.bee_link').style.display = 'inline-block';
                         driverObj.movePrevious();
                     },
                     onNextClick: () => {
@@ -721,144 +725,173 @@ function reportAlert() {
         return;
     }
     const urlParams = new URLSearchParams(window.location.search);
-    if(!urlParams.get('bsn')){
+    if (!urlParams.get('bsn')) {
         console.log("[WARN] 有檢舉但抓取連結失敗");
         return;
     }
     openInFrame("https:////forum.gamer.com.tw/gemadmin/accuse.php?bsn=" + urlParams.get('bsn'));
 }
 
-/////////
+async function postAddBtn() {
+    // 尋找所有 .c-post__body 元素
+    const postSections = document.querySelectorAll('.c-section');
+    postSections.forEach(postSection => {
 
-function addCrossListener_old() {
-    if (window.location.href.includes('forum.gamer.com.tw')) {
-        window.addEventListener('message', function (event) {
-            // 檢查來源是否可信
-            if (event.origin !== 'https://home.gamer.com.tw') return;
+        // 找到 .c-post__body 元素 添加文章下方的按鈕
+        const postBody = postSection.querySelector('.c-post__body');
+        if (!postBody) {
+            return;
+        }
+        // 找到 .article-footer_right 區域
+        const footerLeft = postSection.querySelector('.c-section__side');
+        const footerRight = postBody.querySelector('.article-footer_right');//.c-section__side
 
-            let data = JSON.parse(event.data);
+        // 創建新的懶人包按鈕
+        const lazySummaryButton = document.createElement('a');
+        lazySummaryButton.classList.add('article-footer_right-btn');
+        lazySummaryButton.innerHTML = '<i class="fa fa-pencil" style="margin: 0rem 0.5rem 0rem 0.5rem;"></i><p>懶人包</p>';
+        lazySummaryButton.id = `lazy-summary-${postBody.querySelector('.c-article').id}`; // 生成唯一 ID
 
-            if (data.method === 'set') {
-                localStorage.setItem(data.key, data.value);
+        // 將新的按鈕插入到 .article-footer_right 的開頭
+        footerRight.insertBefore(lazySummaryButton, footerRight.firstChild);
+        // 添加點擊事件監聽器
+        lazySummaryButton.addEventListener('click', async () => {
+            // 防止多次點擊
+            //lazySummaryButton.disabled = true;
+            // 檢查
+            if (lazySummaryButton.querySelector('p').textContent === '產生中...') {
+                return;
+            }
+            if (document.getElementById(`${postBody.querySelector('.c-article').id}-clean`) && lazySummaryButton.querySelector('p').textContent === '摺疊 ▲') {
+                //將本原建設為不可見 並將摺疊 ▲ 改為 展開 ▼
+                document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'none';
+                lazySummaryButton.querySelector('p').textContent = '展開 ▼';
+                return;
+            }
+            if (document.getElementById(`${postBody.querySelector('.c-article').id}-clean`) && lazySummaryButton.querySelector('p').textContent === '展開 ▼') {
+                document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'block';
+                lazySummaryButton.querySelector('p').textContent = '摺疊 ▲';
+                return;
             }
 
-            if (data.method === 'get') {
-                let result = localStorage.getItem(data.key);
-                event.source.postMessage(JSON.stringify(result), event.origin);
+            if (document.getElementById(`${postBody.querySelector('.c-article').id}-clean`) && lazySummaryButton.querySelector('p').textContent !== '懶人包') {
+                return;
             }
-        }, false);
-    }
-}
+            lazySummaryButton.querySelector('p').textContent = '產生中...';
+            // 找到 .c-article__content 元素
+            const articleContent = postBody.querySelector('.c-article__content');
 
-function addSettingElement_old() {
-    if (window.location.href.includes('home.gamer.com.tw/setting/forum')) {
-        // 取得 management-item 元素
-        const lastManagementItem = document.querySelector('.management-item:last-child');
+            // 獲取所有子節點的文本內容，並合併成一個字符串
+            let textContent = '';
+            articleContent.childNodes.forEach(node => {
+                textContent += node.textContent.trim() + '\n';
+            });
 
-        //append iframe
-        const iframe = document.createElement('iframe');
-        iframe.src = 'https://forum.gamer.com.tw';
-        iframe.style.display = 'none';
-        iframe.id = 'bee_settings_iframe';
-        lastManagementItem.appendChild(iframe);
+            // 去除多餘的換行
+            textContent = textContent.replace(/\n+/g, '\n');
 
-        // 插入新內容到最後一個 management-item 元素中
-        const sectionTitle = document.createElement('h3');
-        sectionTitle.className = 'section-title';
-        sectionTitle.textContent = '插件設定';
-        lastManagementItem.appendChild(sectionTitle);
+            // 構建 GPT prompt
+            const prompt = `# 角色
+你是一位出色的文章複述者和分析師。你擅長根據文章標題引導讀者理解文章的重要內容, 分析法對文章進行深入的解讀和總結。
+## 技能
+1. 精細總結：精確的讀懂和理解文章，然後用一句話脈絡清晰的語句總結出文章的主旨。(以下稱為總結內容)
+2. 提煉重點：根據文章的邏輯和結構，清楚列出文章的主要論點。
+## 重要!必定遵守的規則
+- 只能對文章內容進行總結複述，不能添加其他個人觀點或註釋。
+- 不要被文章中的邊緣資訊所分散，並始終保持對主題的專注。
+- 根據使用者提供的文章，進行針對性的複述和分析。如果用戶未提供具體文章，可以請他們明確。
+- 以繁體中文的流暢語言表達
+- 以HTML語法輸出，總結內容以h3標籤包裹，後面列出文章要點並以li標籤包裹，"文章主旨","提煉重點"之類的標題以及codebox語法請省略，只輸出內容就好。
+`;
 
-        lastManagementItem.appendChild(createItemCard('add_function', '標題後方插入功能按鈕'));
-        lastManagementItem.appendChild(createItemCard('preview_auto', '點擊文章時使用即時瀏覽'));
-        lastManagementItem.appendChild(createItemCard('preview_LR', '即時瀏覽從右方彈出（取消則從左）'));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'preview_size', labelText: '即時瀏覽視窗的大小'
-        }));
-        lastManagementItem.appendChild(createItemCard('new_design', '自適型版面（根據下方自定比例適應）'));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'new_design_box', labelText: '　└　整體顯示區域佔比（文章+聊天室佔整個畫面的比例，< 100%）'
-        }));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'new_design_box_Left', labelText: '　　　├　文章佔比（與聊天室佔比總和 <= 100%）'
-        }));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'new_design_box_Right', labelText: '　　　└　聊天室佔比'
-        }));
-        lastManagementItem.appendChild(createItemCard('new_design_LRSwitch', '左右對調（聊天室在左方，讓文章標題在螢幕中間）'));
-        // createItemCard  會因為 id===bee_select_color 而增加寬度
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'bee_select_color', labelText: '勾選文章時的顏色（可含有透明度屬性）'
-        }));
+            try {
+                const response = await fetch(localStorage.getItem("oaiBaseUrl"), {
+                    method: 'POST', headers: {
+                        'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('oaiKey')}`
+                    }, body: JSON.stringify({
+                        messages: [{
+                            role: "system", content: prompt,
+                        }, {
+                            role: "user", content: '文章內容：```' + textContent + '```',
+                        },],
+                        max_tokens: 4090,
+                        model: localStorage.getItem("oaiModel"),
+                        stream: false,
+                        temperature: 0.7,
+                        presence_penalty: 0,
+                        frequency_penalty: 0,
+                    })
+                });
 
-    }
-}
+                if (!response.ok) {
+                    //throw new Error(`伺服器回應錯誤: ${response.status} ${response.statusText}`);
+                    alert('取得 GPT 回覆時發生錯誤，請稍後再試。');
+                    lazySummaryButton.querySelector('p').textContent = '懶人包';
+                    lazySummaryButton.disabled = false;
+                    return;
+                }
 
-// 項目卡函數
-function createItemCard_old(inputId, labelText, additionalContent = null) {
-    const itemCard = document.createElement('div');
-    itemCard.className = 'item-card management_guild-check single-choice';
+                const data = await response.json();
+                const gptReply = data.choices[0].message.content
 
-    const checkGroup = document.createElement('div');
-    checkGroup.className = 'check-group';
+                // 創建新的 .c-article 元素
+                const newArticle = document.createElement('article');
+                newArticle.classList.add('c-article', 'FM-P2');
+                newArticle.id = `${postBody.querySelector('.c-article').id}-clean`;
 
-    if (inputId) {
-        const input = document.createElement('input');
-        input.id = inputId;
-        input.type = 'checkbox';
+                // 創建新的 .c-article__content 元素並插入文本
+                const newContent = document.createElement('div');
+                newContent.classList.add('c-article__content');
+                newContent.style.whiteSpace = 'pre-wrap'; // 添加這行來顯示換行符號
+                //newContent.textContent = gptReply;
+                newContent.innerHTML = gptReply; // 使用 innerHTML 來插入包含 HTML 語法的內容
+                newArticle.appendChild(newContent);
+                // API返回後
+                lazySummaryButton.querySelector('p').textContent = '摺疊 ▲';
 
-        // 如果 localStorage 有儲存的值，則設置為該值，否則預設為 checked
-        input.checked = localStorage.getItem(inputId) === 'true';
-
-        const label = document.createElement('label');
-        label.htmlFor = inputId;
-        label.className = 'is-active';
-
-        const labelIcon = document.createElement('div');
-        labelIcon.className = 'label-icon';
-        const icon = document.createElement('i');
-        icon.className = 'fa fa-check';
-        labelIcon.appendChild(icon);
-
-        const h6 = document.createElement('h6');
-        h6.textContent = labelText;
-
-        label.appendChild(labelIcon);
-        label.appendChild(h6);
-
-        checkGroup.appendChild(input);
-        checkGroup.appendChild(label);
-
-        // 添加 input 事件監聽器，將值保存到 localStorage
-        input.addEventListener('input', function () {
-            localStorage.setItem(inputId, this.checked);
+                // 將新的 .c-article 插入到 .c-post__body__buttonbar 之後
+                postBody.querySelector('.c-post__body__buttonbar').insertAdjacentElement('afterend', newArticle);
+            } catch (error) {
+                console.error('取得 GPT 回覆時發生錯誤:', error);
+                lazySummaryButton.querySelector('p').textContent = '懶人包';
+                lazySummaryButton.disabled = false
+                alert('取得 GPT 回覆時發生錯誤，請稍後再試。');
+            }
         });
-    }
 
-    if (additionalContent) {
-        const h6 = document.createElement('h6');
-        h6.textContent = additionalContent.labelText;
-        checkGroup.appendChild(h6);
-
-        const input = document.createElement('input');
-        input.className = 'form-control';
-        input.id = additionalContent.inputId;
-        input.type = 'text';
-        input.size = 25;
-        input.style.margin = '10px';
-        input.style.width = additionalContent.inputId === "bee_select_color" ? '120px' : '70px';
-
-        // 如果 localStorage 有儲存的值，則設置為該值
-        input.value = localStorage.getItem(additionalContent.inputId) || '';
-
-        checkGroup.appendChild(input);
-
-        // 添加 input 事件監聽器，將值保存到 localStorage
-        input.addEventListener('input', function () {
-            localStorage.setItem(additionalContent.inputId, this.value);
+        // 創建新的懶人包按鈕
+        const skipFloorButtonLeft = document.createElement('a');
+        skipFloorButtonLeft.classList.add('article-footer_right-btn');
+        skipFloorButtonLeft.innerHTML = '<i class="fa fa-archive" style="margin: 0rem 0.5rem 0rem 0.5rem;"></i><p>跳過此樓 ▼</p>';
+        skipFloorButtonLeft.id = `skip-${postBody.querySelector('.c-article').id}`; // 生成唯一 ID
+        skipFloorButtonLeft.style.display = 'flex';
+        skipFloorButtonLeft.style.alignItems = 'center';
+        skipFloorButtonLeft.style.margin = '1rem 0rem 0.5rem 0rem';
+        footerLeft.appendChild(skipFloorButtonLeft);
+        skipFloorButtonLeft.addEventListener('click', async () => {
+            footerRight.scrollIntoView({behavior: "smooth"});
         });
-    }
+        // 創建新的懶人包按鈕
+        const lazySummaryButtonLeft = document.createElement('a');
+        lazySummaryButtonLeft.classList.add('article-footer_right-btn');
+        lazySummaryButtonLeft.innerHTML = '<i class="fa fa-pencil" style="margin: 0rem 0.5rem 0rem 0.5rem;"></i><p>懶人包 ▼</p>';
+        lazySummaryButtonLeft.id = `jump-lazy-summary-${postBody.querySelector('.c-article').id}`; // 生成唯一 ID
+        lazySummaryButtonLeft.style.display = 'flex';
+        lazySummaryButtonLeft.style.alignItems = 'center';
+        lazySummaryButtonLeft.style.margin = '0rem 0rem 0.5rem 0rem';
+        footerLeft.appendChild(lazySummaryButtonLeft);
+        // 添加點擊事件監聽器
+        lazySummaryButtonLeft.addEventListener('click', async () => {
+            footerRight.scrollIntoView({behavior: "smooth"});
+            if(lazySummaryButtonLeft.querySelector('p').textContent !== '懶人包 ▼'){
+                return;
+            }
+            //edit text
+            lazySummaryButtonLeft.querySelector('p').textContent = '已抵達';
+            lazySummaryButton.click();
+        });
 
-    itemCard.appendChild(checkGroup);
-    return itemCard;
+
+    });
+
 }
-
