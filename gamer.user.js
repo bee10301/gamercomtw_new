@@ -38,29 +38,21 @@ function checkFirstRun(reset = false) {
     // bee_select_color > 勾選文章時的顏色（可含有透明度屬性）
     // preview_LR > 即時瀏覽視窗的位置
     const settings = [{key: "isFirstRun", defaultValue: "false"}, {
-        key: "add_function",
-        defaultValue: "true"
+        key: "add_function", defaultValue: "true"
     }, {key: "preview_auto", defaultValue: "true"}, {
-        key: "preview_wait_load",
-        defaultValue: "false"
+        key: "preview_wait_load", defaultValue: "false"
     }, {key: "preview_size", defaultValue: "65%"}, {key: "new_design", defaultValue: "true"}, {
-        key: "new_design_box",
-        defaultValue: "80%"
+        key: "new_design_box", defaultValue: "80%"
     }, {key: "new_design_box_Left", defaultValue: "70%"}, {
-        key: "new_design_box_Right",
-        defaultValue: "25%"
+        key: "new_design_box_Right", defaultValue: "25%"
     }, {key: "new_design_LRSwitch", defaultValue: "true"}, {
-        key: "bee_select_color",
-        defaultValue: "#000000b3"
+        key: "bee_select_color", defaultValue: "#000000b3"
     }, {key: "addBorderInPicMode", defaultValue: "true"}, {key: "showTips", defaultValue: "true"}, {
-        key: "preview_LR",
-        defaultValue: "true"
-    }, {key: "showAbuse", defaultValue: "true"}, {key: "addSummaryBtn", defaultValue: "false"}, {
-        key: "oaiBaseUrl",
-        defaultValue: "https://api.openai.com/v1/chat/completions"
+        key: "preview_LR", defaultValue: "true"
+    }, {key: "showAbuse", defaultValue: "true"}, {key: "addSummaryBtn", defaultValue: "true"}, {
+        key: "oaiBaseUrl", defaultValue: "https://api.openai.com/v1/chat/completions"
     }, {key: "oaiKey", defaultValue: "sk-yourKey"}, {
-        key: "oaiModel",
-        defaultValue: "gpt-3.5-turbo"
+        key: "oaiModel", defaultValue: "gpt-3.5-turbo"
     }, // Add other settings as needed
     ];
 
@@ -762,6 +754,10 @@ async function postAddBtn() {
             if (lazySummaryButton.querySelector('p').textContent === '產生中...') {
                 return;
             }
+            if (localStorage.getItem("oaiKey") === "sk-yourKey" || localStorage.getItem("oaiKey") === "") {
+                alert("請先設定 API Key 才能使用 AI 功能");
+                return;
+            }
             if (document.getElementById(`${postBody.querySelector('.c-article').id}-clean`) && lazySummaryButton.querySelector('p').textContent === '摺疊 ▲') {
                 //將本原建設為不可見 並將摺疊 ▲ 改為 展開 ▼
                 document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'none';
@@ -793,15 +789,26 @@ async function postAddBtn() {
             // 構建 GPT prompt
             const prompt = `# 角色
 你是一位出色的文章複述者和分析師。你擅長根據文章標題引導讀者理解文章的重要內容, 分析法對文章進行深入的解讀和總結。
-## 技能
-1. 精細總結：精確的讀懂和理解文章，然後用一句話脈絡清晰的語句總結出文章的主旨。(以下稱為總結內容)
+
+## workflow
+1. 精細總結：精確的讀懂和理解文章，然後用一句話脈絡清晰的語句總結出文章的主旨。
 2. 提煉重點：根據文章的邏輯和結構，清楚列出文章的主要論點。
-## 重要!必定遵守的規則
+3. 優化並輸出文字：以流暢語言，按照下方範例的格式輸出。
+
+## 約束
 - 只能對文章內容進行總結複述，不能添加其他個人觀點或註釋。
 - 不要被文章中的邊緣資訊所分散，並始終保持對主題的專注。
 - 根據使用者提供的文章，進行針對性的複述和分析。如果用戶未提供具體文章，可以請他們明確。
 - 以繁體中文的流暢語言表達
-- 以HTML語法輸出，總結內容以h3標籤包裹，後面列出文章要點並以li標籤包裹，"文章主旨","提煉重點"之類的標題以及codebox語法請省略，只輸出內容就好。
+
+## 例
+ 總結：
+ (這裡填入精細總結)。
+ (下方依情況增加或減少，將提煉重點列出)
+ - 要點1：
+ - 要點2：
+ ...
+
 `;
 
             try {
@@ -883,7 +890,7 @@ async function postAddBtn() {
         // 添加點擊事件監聽器
         lazySummaryButtonLeft.addEventListener('click', async () => {
             footerRight.scrollIntoView({behavior: "smooth"});
-            if(lazySummaryButtonLeft.querySelector('p').textContent !== '懶人包 ▼'){
+            if (lazySummaryButtonLeft.querySelector('p').textContent !== '懶人包 ▼') {
                 return;
             }
             //edit text
