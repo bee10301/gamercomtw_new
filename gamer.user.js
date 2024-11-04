@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      5.3
+// @version      5.4
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -111,7 +111,7 @@ function addSettingElement() {
 
         lastManagementItem.appendChild(createItemCard('showAbuse', '有檢舉時，自動以即時瀏覽開啟'));
         //summary
-        lastManagementItem.appendChild(createItemCard('addSummaryBtn', '自適型版面（根據下方自定比例適應）'));
+        lastManagementItem.appendChild(createItemCard('addSummaryBtn', '跳過樓層按鈕/AI總結（AI功能需自備KEY填入下方）'));
         lastManagementItem.appendChild(createItemCard(null, null, {
             inputId: 'oaiBaseUrl', labelText: '　├　oai URL'
         }));
