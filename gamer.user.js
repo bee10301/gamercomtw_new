@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      5.6
+// @version      5.7
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -748,8 +748,9 @@ async function postAddBtn() {
         footerRight.insertBefore(lazySummaryButton, footerRight.firstChild);
         // 添加點擊事件監聽器
         lazySummaryButton.addEventListener('click', async () => {
-            // 防止多次點擊
-            //lazySummaryButton.disabled = true;
+            lazySummaryButton.style.marginTop='-130px';
+            lazySummaryButton.scrollIntoView({behavior: "smooth"});
+            lazySummaryButton.style.marginTop='0px';
             // 檢查
             if (lazySummaryButton.querySelector('p').textContent === '產生中...') {
                 return;
@@ -760,12 +761,14 @@ async function postAddBtn() {
             }
             if (document.getElementById(`${postBody.querySelector('.c-article').id}-clean`) && lazySummaryButton.querySelector('p').textContent === '摺疊 ▲') {
                 //將本原建設為不可見 並將摺疊 ▲ 改為 展開 ▼
-                document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'none';
+                //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'none';
+                document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.maxHeight = '0px';
                 lazySummaryButton.querySelector('p').textContent = '展開 ▼';
                 return;
             }
             if (document.getElementById(`${postBody.querySelector('.c-article').id}-clean`) && lazySummaryButton.querySelector('p').textContent === '展開 ▼') {
-                document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'block';
+                //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'block';
+                document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.maxHeight = document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.readHeight + 'px';
                 lazySummaryButton.querySelector('p').textContent = '摺疊 ▲';
                 return;
             }
@@ -787,28 +790,25 @@ async function postAddBtn() {
             textContent = textContent.replace(/\n+/g, '\n');
 
             // 構建 GPT prompt
-            const prompt = `# 角色
-你是一位出色的文章複述者和分析師。你擅長根據文章標題引導讀者理解文章的重要內容, 分析法對文章進行深入的解讀和總結。
+            const prompt = `# 主要目標
+根據文章內容，引導使用者理解文章的重要內容。
 
 ## workflow
-1. 精細總結：精確的讀懂和理解文章，然後用一句話脈絡清晰的語句總結出文章的主旨。
+1. 總結：精確的讀懂和理解文章，然後用一句話脈絡清晰的語句，總結出[文章的主旨]。
 2. 提煉重點：根據文章的邏輯和結構，清楚列出文章的主要論點。
-3. 優化並輸出文字：以流暢語言，按照下方範例的格式輸出。
-
-## 約束
-- 只能對文章內容進行總結複述，不能添加其他個人觀點或註釋。
-- 不要被文章中的邊緣資訊所分散，並始終保持對主題的專注。
-- 根據使用者提供的文章，進行針對性的複述和分析。如果用戶未提供具體文章，可以請他們明確。
-- 以繁體中文的流暢語言表達
-
-## 例
+3. 優化並輸出文字：按照下方範例的格式輸出。
  總結：
- (這裡填入精細總結)。
+ (這裡填入[文章的主旨])。
  (下方依情況增加或減少，將提煉重點列出)
  - 要點1：
  - 要點2：
  ...
 
+
+## MUST/IMPORTANT/RULES
+- 不能添加其他個人觀點或註釋。
+- 不要被文章中的邊緣資訊所分散，並始終保持對主題的專注。
+- 使用繁體中文
 `;
 
             try {
@@ -845,7 +845,10 @@ async function postAddBtn() {
                 const newArticle = document.createElement('article');
                 newArticle.classList.add('c-article', 'FM-P2');
                 newArticle.id = `${postBody.querySelector('.c-article').id}-clean`;
-
+                newArticle.style.display = 'block';
+                newArticle.style.overflow = 'hidden';
+                newArticle.style.maxHeight = 'auto';
+                newArticle.style.minHeight = '0px';
                 // 創建新的 .c-article__content 元素並插入文本
                 const newContent = document.createElement('div');
                 newContent.classList.add('c-article__content');
@@ -853,7 +856,16 @@ async function postAddBtn() {
                 //newContent.textContent = gptReply;
                 newContent.innerHTML = gptReply; // 使用 innerHTML 來插入包含 HTML 語法的內容
                 newArticle.appendChild(newContent);
-                // API返回後
+
+                // 確保在元素被添加到 DOM 並渲染後再取得高度
+                requestAnimationFrame(() => {
+                    newArticle.style.readHeight = newArticle.scrollHeight;
+                });
+                newArticle.style.maxHeight = '0px';
+                newArticle.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
+                requestAnimationFrame(() => {
+                    newArticle.style.maxHeight = newArticle.style.readHeight + 'px';
+                });
                 lazySummaryButton.querySelector('p').textContent = '摺疊 ▲';
 
                 // 將新的 .c-article 插入到 .c-post__body__buttonbar 之後
@@ -866,7 +878,7 @@ async function postAddBtn() {
             }
         });
 
-        // 創建新的懶人包按鈕
+        // 跳過按鈕
         const skipFloorButtonLeft = document.createElement('a');
         skipFloorButtonLeft.classList.add('article-footer_right-btn');
         skipFloorButtonLeft.innerHTML = '<i class="fa fa-archive" style="margin: 0rem 0.5rem 0rem 0.5rem;"></i><p>跳過此樓 ▼</p>';
@@ -878,7 +890,7 @@ async function postAddBtn() {
         skipFloorButtonLeft.addEventListener('click', async () => {
             footerRight.scrollIntoView({behavior: "smooth"});
         });
-        // 創建新的懶人包按鈕
+        // 跳到懶人包按鈕
         const lazySummaryButtonLeft = document.createElement('a');
         lazySummaryButtonLeft.classList.add('article-footer_right-btn');
         lazySummaryButtonLeft.innerHTML = '<i class="fa fa-pencil" style="margin: 0rem 0.5rem 0rem 0.5rem;"></i><p>懶人包 ▼</p>';
@@ -889,7 +901,9 @@ async function postAddBtn() {
         footerLeft.appendChild(lazySummaryButtonLeft);
         // 添加點擊事件監聽器
         lazySummaryButtonLeft.addEventListener('click', async () => {
+            footerRight.style.marginTop='-130px';
             footerRight.scrollIntoView({behavior: "smooth"});
+            footerRight.style.marginTop='0px';
             if (lazySummaryButtonLeft.querySelector('p').textContent !== '懶人包 ▼') {
                 return;
             }
