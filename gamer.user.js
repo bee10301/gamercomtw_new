@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      6.3
+// @version      6.4
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -801,7 +801,7 @@ function reportAlert() {
 async function getPrompt() {
     let today = new Date();
     let oaiPromptUpdateDate = localStorage.getItem("oaiPromptUpdateDate");
-    if (today.toISOString().slice(0, 10).replace(/-/g, "") - oaiPromptUpdateDate <= 0) {
+    if (today.toISOString().slice(0, 10).replace(/-/g, "") - oaiPromptUpdateDate < localStorage.getItem("oaiPromptUpdateSleep")) {
         return null;
     }
     try {
