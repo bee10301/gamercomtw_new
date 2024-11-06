@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      5.7
+// @version      6.0
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -14,10 +14,10 @@
 // @updateURL    https://gamercomtwnew.bee.moe/gamer.meta.js
 // ==/UserScript==
 
-(function () {
+(async function () {
     ("use strict");
     checkFirstRun();
-    addSettingElement();
+    await addSettingElement();
     worker_bPage();
     worker_cPage();
     reportAlert();
@@ -39,21 +39,63 @@ function checkFirstRun(reset = false) {
     // preview_LR > 即時瀏覽視窗的位置
     const settings = [{key: "isFirstRun", defaultValue: "false"}, {
         key: "add_function", defaultValue: "true"
-    }, {key: "preview_auto", defaultValue: "true"}, {
+    }, {
+        key: "preview_auto", defaultValue: "true"
+    }, {
         key: "preview_wait_load", defaultValue: "false"
-    }, {key: "preview_size", defaultValue: "65%"}, {key: "new_design", defaultValue: "true"}, {
+    }, {
+        key: "preview_size", defaultValue: "65%"
+    }, {
+        key: "new_design", defaultValue: "true"
+    }, {
         key: "new_design_box", defaultValue: "80%"
-    }, {key: "new_design_box_Left", defaultValue: "70%"}, {
+    }, {
+        key: "new_design_box_Left", defaultValue: "70%"
+    }, {
         key: "new_design_box_Right", defaultValue: "25%"
-    }, {key: "new_design_LRSwitch", defaultValue: "true"}, {
+    }, {
+        key: "new_design_LRSwitch", defaultValue: "true"
+    }, {
         key: "bee_select_color", defaultValue: "#000000b3"
-    }, {key: "addBorderInPicMode", defaultValue: "true"}, {key: "showTips", defaultValue: "true"}, {
+    }, {
+        key: "addBorderInPicMode", defaultValue: "true"
+    }, {
+        key: "showTips", defaultValue: "true"
+    }, {
         key: "preview_LR", defaultValue: "true"
-    }, {key: "showAbuse", defaultValue: "true"}, {key: "addSummaryBtn", defaultValue: "true"}, {
+    }, {
+        key: "showAbuse", defaultValue: "true"
+    }, {
+        key: "addSummaryBtn", defaultValue: "true"
+    }, {
         key: "oaiBaseUrl", defaultValue: "https://api.openai.com/v1/chat/completions"
-    }, {key: "oaiKey", defaultValue: "sk-yourKey"}, {
+    }, {
+        key: "oaiKey", defaultValue: "sk-yourKey"
+    }, {
         key: "oaiModel", defaultValue: "gpt-3.5-turbo"
-    }, // Add other settings as needed
+    }, {
+        key: "oaiPrompt", defaultValue: `## workflow
+1. 總結：精確的讀懂和理解文章，然後用一句話脈絡清晰的語句，總結出[文章的主旨]。
+2. 提煉重點：根據文章的邏輯和結構，清楚列出文章的主要論點，並按照下方範例的格式輸出。
+ 總結：
+ - 要點1：
+ - 要點2：
+ ...(依情況增加或減少要點)
+
+## MUST/IMPORTANT/RULES
+- 不能添加其他個人觀點或註釋。
+- 使用繁體中文
+`
+    }, {
+        key: "oaiPromptDate", defaultValue: "20241101"
+    }, {
+        key: "oaiPromptUpdateDate", defaultValue: "20241101"
+    }, {
+        key: "oaiPromptUpdateURL", defaultValue: "https://gamercomtwnew.bee.moe/gamer.prompts.js"
+    }, {
+        key: "oaiPromptUpdateSleep", defaultValue: "1"
+    }
+        // Add other settings as needed
     ];
 
     settings.forEach(setting => {
@@ -69,54 +111,83 @@ function checkFirstRun(reset = false) {
 
 }
 
-function addSettingElement() {
-    if (window.location.href.includes('forum.gamer.com.tw/B.php')) {
-        // 取得 management-item 元素
-        const lastManagementItem = document.querySelector('#BH-menu-path > ul > ul > li.BH-menu-forumA-right.dropList > dl/* > dd:nth-child(4)*/');
-
-        // 插入新內容到最後一個 management-item 元素中
-        const sectionTitle = document.createElement('h3');
-        sectionTitle.className = 'section-title';
-        sectionTitle.textContent = '插件設定';
-        sectionTitle.style.margin = '0.6rem 0 0.7rem 0.7rem';
-        lastManagementItem.appendChild(sectionTitle);
-
-        lastManagementItem.appendChild(createItemCard('add_function', '標題後方插入功能按鈕'));
-        lastManagementItem.appendChild(createItemCard('preview_auto', '點擊文章時使用即時瀏覽'));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'preview_size', labelText: '　└　即時瀏覽視窗的大小'
-        }));
-        lastManagementItem.appendChild(createItemCard('preview_LR', '即時瀏覽從右方彈出（取消則從左）'));
-        lastManagementItem.appendChild(createItemCard('new_design', '自適型版面（根據下方自定比例適應）'));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'new_design_box', labelText: '　└　整體顯示區域佔比（文章+聊天室佔整個畫面的比例，< 100%）'
-        }));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'new_design_box_Left', labelText: '　　　├　文章佔比（與聊天室佔比總和 <= 100%）'
-        }));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'new_design_box_Right', labelText: '　　　└　聊天室佔比'
-        }));
-        lastManagementItem.appendChild(createItemCard('new_design_LRSwitch', '左右對調（聊天室在左方，讓文章標題在螢幕中間）'));
-
-        lastManagementItem.appendChild(createItemCard('addBorderInPicMode', '縮圖列表模式中，加上分隔線'));
-
-        lastManagementItem.appendChild(createItemCard('showAbuse', '有檢舉時，自動以即時瀏覽開啟'));
-        //summary
-        lastManagementItem.appendChild(createItemCard('addSummaryBtn', '跳過樓層按鈕/AI總結（AI功能需自備KEY填入下方）'));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'oaiBaseUrl', labelText: '　├　oai URL'
-        }));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'oaiModel', labelText: '　├　oai model'
-        }));
-        lastManagementItem.appendChild(createItemCard(null, null, {
-            inputId: 'oaiKey', labelText: '　└　oai key'
-        }));
-        // createItemCard  會因為 id===bee_select_color 而增加寬度
-        lastManagementItem.appendChild(createItemCard('showTips', '重新觀看TIPs'));
-
+async function addSettingElement() {
+    if (!window.location.href.includes('forum.gamer.com.tw/B.php')) {
+        return;
     }
+    const navAddTag = document.querySelector('.BH-menuE');
+    const navAdd = document.createElement('li');
+    navAdd.className = 'beeSettingTag';
+    navAdd.innerHTML = '<a>插件設定</a>';
+    //click時，給 section-title-warp 切換 display:block / none
+    navAdd.addEventListener('click', function () {
+        let sectionTitleWarp = document.querySelector('.beeSettingWarp');
+        let getTopicElement = document.querySelector('.b-list');
+        if (sectionTitleWarp.style.maxHeight === (sectionTitleWarp.style.readHeight + 'px')) {
+            sectionTitleWarp.style.maxHeight = '0px';
+            document.querySelector('.b-list').style.display = 'table';
+        } else {
+            sectionTitleWarp.style.maxHeight = sectionTitleWarp.style.readHeight + 'px';
+            document.querySelector('.b-list').style.display = 'none';
+        }
+    });
+    navAddTag.appendChild(navAdd);
+    // 取得 management-item 元素
+    //const lastManagementItem = document.querySelector('#BH-menu-path > ul > ul > li.BH-menu-forumA-right.dropList > dl/* > dd:nth-child(4)*/');
+    const settingsWarp = document.querySelector('.b-list-wrap');
+    // 插入新內容到最後一個 management-item 元素中
+    const lastManagementItem = document.createElement('div');
+    lastManagementItem.className = 'beeSettingWarp';
+    lastManagementItem.style.maxHeight = '0px';
+    lastManagementItem.style.overflow = 'hidden';
+    const sectionTitle = document.createElement('h3');
+    sectionTitle.className = 'section-title';
+    sectionTitle.textContent = '插件設定（再點一次上方的【插件設定】即可返回【文章列表】）';
+    sectionTitle.style.margin = '0.6rem 0 0.7rem 0.7rem';
+    lastManagementItem.appendChild(sectionTitle);
+
+    lastManagementItem.appendChild(createItemCard('add_function', '標題後方插入功能按鈕'));
+    lastManagementItem.appendChild(createItemCard('preview_auto', '點擊文章時使用即時瀏覽'));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'preview_size', labelText: '　└　即時瀏覽視窗的大小'
+    }));
+    lastManagementItem.appendChild(createItemCard('preview_LR', '即時瀏覽從右方彈出（取消則從左）'));
+    lastManagementItem.appendChild(createItemCard('new_design', '自適型版面（根據下方自定比例適應）'));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'new_design_box', labelText: '　└　整體顯示區域佔比（文章+聊天室佔整個畫面的比例，< 100%）'
+    }));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'new_design_box_Left', labelText: '　　　├　文章佔比（與聊天室佔比總和 <= 100%）'
+    }));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'new_design_box_Right', labelText: '　　　└　聊天室佔比'
+    }));
+    lastManagementItem.appendChild(createItemCard('new_design_LRSwitch', '左右對調（聊天室在左方，讓文章標題在螢幕中間）'));
+
+    lastManagementItem.appendChild(createItemCard('addBorderInPicMode', '縮圖列表模式中，加上分隔線'));
+
+    lastManagementItem.appendChild(createItemCard('showAbuse', '有檢舉時，自動以即時瀏覽開啟'));
+    //summary
+    lastManagementItem.appendChild(createItemCard('addSummaryBtn', '跳過樓層按鈕/AI總結（AI功能需自備KEY填入下方）'));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'oaiBaseUrl', labelText: '　├　oai URL'
+    }));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'oaiModel', labelText: '　├　oai model'
+    }));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'oaiKey', labelText: '　├　oai key'
+    }));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'oaiPromptUpdateURL', labelText: '　└　oai prompt settings URL'
+    }));
+    // createItemCard  會因為 id===bee_select_color 而增加寬度
+    lastManagementItem.appendChild(createItemCard('showTips', '重新觀看TIPs'));
+
+    //settingsWarp.appendChild(lastManagementItem);
+    settingsWarp.insertBefore(lastManagementItem,settingsWarp.firstChild);
+
+    await popElementInit(lastManagementItem, false);
 }
 
 // 項目卡函數
@@ -176,7 +247,7 @@ function createItemCard(inputId, labelText, additionalContent = null) {
         input.type = 'text';
         input.size = 25;
         input.style.margin = '0px';
-        input.style.width = additionalContent.inputId === "bee_select_color" ? '120px' : '70px';
+        input.style.width = additionalContent.inputId.startsWith('oai') ? 'auto' : '70px';
 
         // 如果 localStorage 有儲存的值，則設置為該值
         input.value = localStorage.getItem(additionalContent.inputId) || '';
@@ -724,7 +795,36 @@ function reportAlert() {
     openInFrame("https:////forum.gamer.com.tw/gemadmin/accuse.php?bsn=" + urlParams.get('bsn'));
 }
 
+async function getPrompt() {
+    let today = new Date();
+    let oaiPromptUpdateDate = localStorage.getItem("oaiPromptUpdateDate");
+    if (today.toISOString().slice(0, 10).replace(/-/g, "") - oaiPromptUpdateDate <= 0) {
+        return null;
+    }
+    try {
+        const response = await fetch(localStorage.getItem("oaiPromptUpdateURL"));
+        if (!response.ok) {
+            console.error('[ERROR] fetching prompt:', response.status);
+            return null;
+        }
+        const data = await response.json();
+        localStorage.setItem('oaiPromptUpdateDate', today.toISOString().slice(0, 10).replace(/-/g, ""));
+        if (localStorage.getItem('oaiPromptDate') >= data.oaiPromptDate) {
+            return data;
+        }
+        localStorage.setItem('oaiPromptDate', data.oaiPromptDate);
+        localStorage.setItem('oaiPrompt', data.oaiPrompt);
+        localStorage.setItem('oaiPromptUpdateSleep', data.oaiPromptUpdateSleep);
+        return data;
+    } catch (error) {
+        console.error('[ERROR] fetching prompt:', error);
+        return null;
+    }
+}
+
 async function postAddBtn() {
+    // check if oaiUpdateDate is more than today (format: yyyymmdd)
+    await getPrompt();
     // 尋找所有 .c-post__body 元素
     const postSections = document.querySelectorAll('.c-section');
     postSections.forEach(postSection => {
@@ -748,9 +848,9 @@ async function postAddBtn() {
         footerRight.insertBefore(lazySummaryButton, footerRight.firstChild);
         // 添加點擊事件監聽器
         lazySummaryButton.addEventListener('click', async () => {
-            lazySummaryButton.style.marginTop='-130px';
+            lazySummaryButton.style.marginTop = '-130px';
             lazySummaryButton.scrollIntoView({behavior: "smooth"});
-            lazySummaryButton.style.marginTop='0px';
+            lazySummaryButton.style.marginTop = '0px';
             // 檢查
             if (lazySummaryButton.querySelector('p').textContent === '產生中...') {
                 return;
@@ -790,26 +890,7 @@ async function postAddBtn() {
             textContent = textContent.replace(/\n+/g, '\n');
 
             // 構建 GPT prompt
-            const prompt = `# 主要目標
-根據文章內容，引導使用者理解文章的重要內容。
-
-## workflow
-1. 總結：精確的讀懂和理解文章，然後用一句話脈絡清晰的語句，總結出[文章的主旨]。
-2. 提煉重點：根據文章的邏輯和結構，清楚列出文章的主要論點。
-3. 優化並輸出文字：按照下方範例的格式輸出。
- 總結：
- (這裡填入[文章的主旨])。
- (下方依情況增加或減少，將提煉重點列出)
- - 要點1：
- - 要點2：
- ...
-
-
-## MUST/IMPORTANT/RULES
-- 不能添加其他個人觀點或註釋。
-- 不要被文章中的邊緣資訊所分散，並始終保持對主題的專注。
-- 使用繁體中文
-`;
+            const prompt = localStorage.getItem('oaiPrompt') || '';
 
             try {
                 const response = await fetch(localStorage.getItem("oaiBaseUrl"), {
@@ -817,7 +898,7 @@ async function postAddBtn() {
                         'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('oaiKey')}`
                     }, body: JSON.stringify({
                         messages: [{
-                            role: "system", content: prompt,
+                            role: "user", content: prompt,
                         }, {
                             role: "user", content: '文章內容：```' + textContent + '```',
                         },],
@@ -858,14 +939,15 @@ async function postAddBtn() {
                 newArticle.appendChild(newContent);
 
                 // 確保在元素被添加到 DOM 並渲染後再取得高度
-                requestAnimationFrame(() => {
+                /*requestAnimationFrame(() => {
                     newArticle.style.readHeight = newArticle.scrollHeight;
                 });
                 newArticle.style.maxHeight = '0px';
                 newArticle.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
                 requestAnimationFrame(() => {
                     newArticle.style.maxHeight = newArticle.style.readHeight + 'px';
-                });
+                });*/
+                await popElementInit(newArticle);
                 lazySummaryButton.querySelector('p').textContent = '摺疊 ▲';
 
                 // 將新的 .c-article 插入到 .c-post__body__buttonbar 之後
@@ -901,9 +983,9 @@ async function postAddBtn() {
         footerLeft.appendChild(lazySummaryButtonLeft);
         // 添加點擊事件監聽器
         lazySummaryButtonLeft.addEventListener('click', async () => {
-            footerRight.style.marginTop='-130px';
+            footerRight.style.marginTop = '-130px';
             footerRight.scrollIntoView({behavior: "smooth"});
-            footerRight.style.marginTop='0px';
+            footerRight.style.marginTop = '0px';
             if (lazySummaryButtonLeft.querySelector('p').textContent !== '懶人包 ▼') {
                 return;
             }
@@ -915,4 +997,19 @@ async function postAddBtn() {
 
     });
 
+}
+
+async function popElementInit(element, show = true) {
+    // 確保在元素被添加到 DOM 並渲染後再取得高度
+    requestAnimationFrame(() => {
+        element.style.readHeight = element.scrollHeight;
+    });
+    element.style.maxHeight = '0px';
+    element.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
+    if (!show) {
+        return;
+    }
+    requestAnimationFrame(() => {
+        element.style.maxHeight = element.style.readHeight + 'px';
+    });
 }
