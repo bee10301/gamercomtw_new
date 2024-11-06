@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      6.2
+// @version      6.3
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -103,6 +103,9 @@ function checkFirstRun(reset = false) {
             localStorage.setItem(setting.key, setting.defaultValue);
         }
     });
+    if(localStorage.getItem("oaiPromptUpdateURL")==="https://gamercomtwnew.bee.moe/gamer.prompts.js"){
+        localStorage.setItem("oaiPromptUpdateURL","https://gamercomtwnew.bee.moe/gamer.prompts.json");
+    }
 
     if (localStorage.getItem("showTips") === "true") {
         loadTips();
