@@ -718,7 +718,7 @@ function loadTips() {
             },*/
             showProgress: true,
             steps: [{
-                element: '#BH-menu-path > ul > ul > li.BH-menu-forumA-right.dropList', popover: {
+                element: '.beeSettingTag', popover: {
                     title: '客製化設定', description: '在這裡可以進行詳細的個人設定，設定變更後需要【重新整理】頁面才會生效。'
                 }
             }, {
