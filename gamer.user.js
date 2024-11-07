@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      6.4
+// @version      6.5
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -103,8 +103,8 @@ function checkFirstRun(reset = false) {
             localStorage.setItem(setting.key, setting.defaultValue);
         }
     });
-    if(localStorage.getItem("oaiPromptUpdateURL")==="https://gamercomtwnew.bee.moe/gamer.prompts.js"){
-        localStorage.setItem("oaiPromptUpdateURL","https://gamercomtwnew.bee.moe/gamer.prompts.json");
+    if (localStorage.getItem("oaiPromptUpdateURL") === "https://gamercomtwnew.bee.moe/gamer.prompts.js") {
+        localStorage.setItem("oaiPromptUpdateURL", "https://gamercomtwnew.bee.moe/gamer.prompts.json");
     }
 
     if (localStorage.getItem("showTips") === "true") {
@@ -188,7 +188,7 @@ async function addSettingElement() {
     lastManagementItem.appendChild(createItemCard('showTips', '重新觀看TIPs'));
 
     //settingsWarp.appendChild(lastManagementItem);
-    settingsWarp.insertBefore(lastManagementItem,settingsWarp.firstChild);
+    settingsWarp.insertBefore(lastManagementItem, settingsWarp.firstChild);
 
     await popElementInit(lastManagementItem, false);
 }
@@ -267,7 +267,6 @@ function createItemCard(inputId, labelText, additionalContent = null) {
     return itemCard;
 }
 
-
 function worker_cPage() {
     if (!window.location.href.includes('forum.gamer.com.tw/C.php')) {
         return;
@@ -281,7 +280,6 @@ function worker_cPage() {
     }
     postAddBtn();
 }
-
 
 function worker_bPage() {
     if (window.location.href.includes('forum.gamer.com.tw/B.php')) {
@@ -635,59 +633,6 @@ function bPage_previewAuto() {
 
 }
 
-function openInFrame(url) {
-    let iframe = document.getElementById('bee_frame');
-    iframe.src = url;
-
-    let BHMenuPath = document.querySelector('#BH-menu-path');
-    BHMenuPath.style.height = '100%';
-    BHMenuPath.style.opacity = '0.6';
-
-    setTimeout(() => {
-        document.querySelector('.bee_preview_wd').style.transform = 'translateX(0%) scaleX(' + 1 + ')';
-        document.querySelector('.bee_preview_wd').style.opacity = '1';
-    }, 500);
-
-    //wait 1 sec
-    setTimeout(() => {
-        let iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        let styleSheet = iframeDoc.createElement('style');
-        iframeDoc.head.appendChild(styleSheet);
-        let sheet = styleSheet.sheet;
-        sheet.insertRule('.managertools { position: fixed; bottom: 0; right: 0; z-index: 100; }', 0);
-    }, 1000);
-
-
-    /*iframe.onload = function () {
-        let iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        let iframeElement = iframeDoc.querySelector('.managertools');
-        iframeElement.style.position = 'fixed';
-        iframeElement.style.top = '0';
-        iframeElement.style.right = '0';
-        iframeElement.style.zIndex = '100';
-    };*/
-    /*document.getElementById('bee_frame').src = url;
-    let BHMenuPath = document.querySelector('#BH-menu-path');
-    BHMenuPath.style.height = '100%';
-    BHMenuPath.style.opacity = '0.6';
-    //run after 0.5s
-    setTimeout(() => {
-        //document.querySelector('.bee_preview_wd').style.width = localStorage.getItem("preview_size");
-        document.querySelector('.bee_preview_wd').style.transform = 'translateX(0%) scaleX(' + 1 + ')';
-        document.querySelector('.bee_preview_wd').style.opacity = '1';
-    }, 500);
-    //change the element in iframe '#BH-master > form:nth-child(5) > section:nth-child(52) > div' css to 'position: fixed; top: 0; right: 0;' while iframe loaded
-    document.getElementById('bee_frame').onload = function () {
-        let iframe = document.getElementById('bee_frame');
-        let iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        let iframeElement = iframeDoc.querySelector('#BH-master > form > section > div');
-        iframeElement.style.position = 'fixed';
-        iframeElement.style.top = '0';
-        iframeElement.style.right = '0';
-    };*/
-
-}
-
 function bPage_addBorderInPicMode() {
     const all_blocks_pic_mode = document.querySelectorAll('#BH-master > form > div > table > tbody > tr > td.b-list__main > div > p');
     Array.from(all_blocks_pic_mode).forEach(function (link) {
@@ -798,45 +743,16 @@ function reportAlert() {
     openInFrame("https:////forum.gamer.com.tw/gemadmin/accuse.php?bsn=" + urlParams.get('bsn'));
 }
 
-async function getPrompt() {
-    let today = new Date();
-    let oaiPromptUpdateDate = localStorage.getItem("oaiPromptUpdateDate");
-    if (today.toISOString().slice(0, 10).replace(/-/g, "") - oaiPromptUpdateDate < localStorage.getItem("oaiPromptUpdateSleep")) {
-        return null;
-    }
-    try {
-        const response = await fetch(localStorage.getItem("oaiPromptUpdateURL"));
-        if (!response.ok) {
-            console.error('[ERROR] fetching prompt:', response.status);
-            return null;
-        }
-        const data = await response.json();
-        localStorage.setItem('oaiPromptUpdateDate', today.toISOString().slice(0, 10).replace(/-/g, ""));
-        if (localStorage.getItem('oaiPromptDate') >= data.oaiPromptDate) {
-            return data;
-        }
-        localStorage.setItem('oaiPromptDate', data.oaiPromptDate);
-        localStorage.setItem('oaiPrompt', data.oaiPrompt);
-        localStorage.setItem('oaiPromptUpdateSleep', data.oaiPromptUpdateSleep);
-        return data;
-    } catch (error) {
-        console.error('[ERROR] fetching prompt:', error);
-        return null;
-    }
-}
-
 async function postAddBtn() {
     // check if oaiUpdateDate is more than today (format: yyyymmdd)
     await getPrompt();
     // 尋找所有 .c-post__body 元素
-    const postSections = document.querySelectorAll('.c-section');
+    //const postSections = document.querySelectorAll('.c-section');
+    const postSections = Array.from(document.querySelectorAll('.c-section')).filter(postSection => postSection.querySelector('.c-post__body'));
     postSections.forEach(postSection => {
 
         // 找到 .c-post__body 元素 添加文章下方的按鈕
         const postBody = postSection.querySelector('.c-post__body');
-        if (!postBody) {
-            return;
-        }
         // 找到 .article-footer_right 區域
         const footerLeft = postSection.querySelector('.c-section__side');
         const footerRight = postBody.querySelector('.article-footer_right');//.c-section__side
@@ -851,9 +767,7 @@ async function postAddBtn() {
         footerRight.insertBefore(lazySummaryButton, footerRight.firstChild);
         // 添加點擊事件監聽器
         lazySummaryButton.addEventListener('click', async () => {
-            lazySummaryButton.style.marginTop = '-130px';
-            lazySummaryButton.scrollIntoView({behavior: "smooth"});
-            lazySummaryButton.style.marginTop = '0px';
+            scrollIntoBee(lazySummaryButton);
             // 檢查
             if (lazySummaryButton.querySelector('p').textContent === '產生中...') {
                 return;
@@ -973,7 +887,15 @@ async function postAddBtn() {
         skipFloorButtonLeft.style.margin = '1rem 0rem 0.5rem 0rem';
         footerLeft.appendChild(skipFloorButtonLeft);
         skipFloorButtonLeft.addEventListener('click', async () => {
-            footerRight.scrollIntoView({behavior: "smooth"});
+            //scroll to next postSection
+            let currentSectionIndex = Array.from(postSections).indexOf(postSection);
+            let nextSection = postSections[currentSectionIndex + 1];
+            if (nextSection) {
+                scrollIntoBee(nextSection);
+            } else {
+                scrollIntoBee(footerRight);
+            }
+            //scrollIntoBee(footerRight);
         });
         // 跳到懶人包按鈕
         const lazySummaryButtonLeft = document.createElement('a');
@@ -986,9 +908,7 @@ async function postAddBtn() {
         footerLeft.appendChild(lazySummaryButtonLeft);
         // 添加點擊事件監聽器
         lazySummaryButtonLeft.addEventListener('click', async () => {
-            footerRight.style.marginTop = '-130px';
-            footerRight.scrollIntoView({behavior: "smooth"});
-            footerRight.style.marginTop = '0px';
+            scrollIntoBee(footerRight);
             if (lazySummaryButtonLeft.querySelector('p').textContent !== '懶人包 ▼') {
                 return;
             }
@@ -999,6 +919,86 @@ async function postAddBtn() {
 
 
     });
+
+}
+
+async function getPrompt() {
+    let today = new Date();
+    let oaiPromptUpdateDate = localStorage.getItem("oaiPromptUpdateDate");
+    if (today.toISOString().slice(0, 10).replace(/-/g, "") - oaiPromptUpdateDate < localStorage.getItem("oaiPromptUpdateSleep")) {
+        return null;
+    }
+    try {
+        const response = await fetch(localStorage.getItem("oaiPromptUpdateURL"));
+        if (!response.ok) {
+            console.error('[ERROR] fetching prompt:', response.status);
+            return null;
+        }
+        const data = await response.json();
+        localStorage.setItem('oaiPromptUpdateDate', today.toISOString().slice(0, 10).replace(/-/g, ""));
+        if (localStorage.getItem('oaiPromptDate') >= data.oaiPromptDate) {
+            return data;
+        }
+        localStorage.setItem('oaiPromptDate', data.oaiPromptDate);
+        localStorage.setItem('oaiPrompt', data.oaiPrompt);
+        localStorage.setItem('oaiPromptUpdateSleep', data.oaiPromptUpdateSleep);
+        return data;
+    } catch (error) {
+        console.error('[ERROR] fetching prompt:', error);
+        return null;
+    }
+}
+
+function openInFrame(url) {
+    let iframe = document.getElementById('bee_frame');
+    iframe.src = url;
+
+    let BHMenuPath = document.querySelector('#BH-menu-path');
+    BHMenuPath.style.height = '100%';
+    BHMenuPath.style.opacity = '0.6';
+
+    setTimeout(() => {
+        document.querySelector('.bee_preview_wd').style.transform = 'translateX(0%) scaleX(' + 1 + ')';
+        document.querySelector('.bee_preview_wd').style.opacity = '1';
+    }, 500);
+
+    //wait 1 sec
+    setTimeout(() => {
+        let iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        let styleSheet = iframeDoc.createElement('style');
+        iframeDoc.head.appendChild(styleSheet);
+        let sheet = styleSheet.sheet;
+        sheet.insertRule('.managertools { position: fixed; bottom: 0; right: 0; z-index: 100; }', 0);
+    }, 1000);
+
+
+    /*iframe.onload = function () {
+        let iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        let iframeElement = iframeDoc.querySelector('.managertools');
+        iframeElement.style.position = 'fixed';
+        iframeElement.style.top = '0';
+        iframeElement.style.right = '0';
+        iframeElement.style.zIndex = '100';
+    };*/
+    /*document.getElementById('bee_frame').src = url;
+    let BHMenuPath = document.querySelector('#BH-menu-path');
+    BHMenuPath.style.height = '100%';
+    BHMenuPath.style.opacity = '0.6';
+    //run after 0.5s
+    setTimeout(() => {
+        //document.querySelector('.bee_preview_wd').style.width = localStorage.getItem("preview_size");
+        document.querySelector('.bee_preview_wd').style.transform = 'translateX(0%) scaleX(' + 1 + ')';
+        document.querySelector('.bee_preview_wd').style.opacity = '1';
+    }, 500);
+    //change the element in iframe '#BH-master > form:nth-child(5) > section:nth-child(52) > div' css to 'position: fixed; top: 0; right: 0;' while iframe loaded
+    document.getElementById('bee_frame').onload = function () {
+        let iframe = document.getElementById('bee_frame');
+        let iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        let iframeElement = iframeDoc.querySelector('#BH-master > form > section > div');
+        iframeElement.style.position = 'fixed';
+        iframeElement.style.top = '0';
+        iframeElement.style.right = '0';
+    };*/
 
 }
 
@@ -1015,4 +1015,28 @@ async function popElementInit(element, show = true) {
     requestAnimationFrame(() => {
         element.style.maxHeight = element.style.readHeight + 'px';
     });
+}
+
+
+function scrollIntoBee(element, marginOffset = 7) {
+    const temp_marginTop = (element.style.marginTop === undefined || '') ? '0px' : element.style.marginTop;
+    element.style.marginTop = `-${marginOffset}rem`;
+    element.scrollIntoView({behavior: "smooth"});
+    element.style.marginTop = temp_marginTop;
+    //check after 0.3 sec, if not inInViewport, recall
+    setTimeout(() => {
+        if (!isInViewport(element)) {
+            scrollIntoBee(element, marginOffset);
+        }
+    }, 300);
+}
+
+
+function isInViewport(element) {
+    const rect = element.getBoundingClientRect();
+    return (rect.top >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight)
+        //rect.left >= 0 &&
+        //rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        //rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
 }
