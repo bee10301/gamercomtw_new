@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      6.6
+// @version      7.0
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -13,6 +13,7 @@
 // @downloadURL  https://gamercomtwnew.bee.moe/gamer.user.js
 // @updateURL    https://gamercomtwnew.bee.moe/gamer.meta.js
 // ==/UserScript==
+// noinspection SpellCheckingInspection
 
 (async function () {
     ("use strict");
@@ -87,6 +88,9 @@ function checkFirstRun(reset = false) {
 - 使用繁體中文
 `
     }, {
+        key: "oaiPromptCmd",
+        defaultValue: "以下是一段群組聊天的對話，總結對話中的話題，用條列式列出使用者的想法。\n## workflow \n 1. 整理話題：理解各個使用者討論的話題並以話題為單位整理出整串對話的話題 \n 2. 將相同話題中，對同一件事有相似想法的對話整理在一起(例如 `@user1/@user2：認為太貴了`) ，不同看法則單獨列出。\n 3. 輸出：把冗餘贅字優化，但保留具體描述。(劣例:`@user1/@user2：提及角色在世界觀中的地位和特徵` 在這個例子中沒有具體描述提即了什麼樣的地位或特徵)。使用者以 @id 標記並且不再添加其他md語法。 \n ## MUST/IMPORTANT/RULES \n- 不能添加其他個人觀點或註釋。\n- 使用繁體中文\n"
+    }, {
         key: "oaiPromptDate", defaultValue: "20241101"
     }, {
         key: "oaiPromptUpdateDate", defaultValue: "20241101"
@@ -125,7 +129,7 @@ async function addSettingElement() {
     navAdd.addEventListener('click', function () {
         let sectionTitleWarp = document.querySelector('.beeSettingWarp');
         popElement(sectionTitleWarp, "toggle", 'ud');
-        scrollIntoBee(document.querySelector('.b-list-wrap'),7);
+        scrollIntoBee(document.querySelector('.b-list-wrap'), 7);
     });
     navAddTag.appendChild(navAdd);
     // 取得 management-item 元素
@@ -325,7 +329,7 @@ async function bPage_addFrame() {
     //document.querySelector('.bee_preview_wd').appendChild(beeFrame);
     beePreviewWd.appendChild(beeFrame);
     document.body.appendChild(beePreviewWd);
-    await popElementInit(beePreviewWd, false, localStorage.getItem("preview_LR") === "true"?'rl':'lr',false);
+    await popElementInit(beePreviewWd, false, localStorage.getItem("preview_LR") === "true" ? 'rl' : 'lr', false);
 
     //close frame by top menu
     let BHMenuPath = document.querySelector('#BH-menu-path');
@@ -337,7 +341,7 @@ async function bPage_addFrame() {
     BHMenuPath.addEventListener('click', () => {
         /*document.querySelector('.bee_preview_wd').style.transform = 'translateX(100%)';
         document.querySelector('.bee_preview_wd').style.opacity = '0';*/
-        popElement(document.querySelector('.bee_preview_wd'), 'false', localStorage.getItem("preview_LR") === "true"?'rl':'lr');
+        popElement(document.querySelector('.bee_preview_wd'), 'false', localStorage.getItem("preview_LR") === "true" ? 'rl' : 'lr');
         BHMenuPath.style.height = '40px';
         BHMenuPath.style.opacity = '1';
     });
@@ -859,6 +863,156 @@ async function postAddBtn() {
             }
         });
 
+        // 創建新的懶人包按鈕(留言)
+        const lazySummaryButtonCmd = document.createElement('a');
+        lazySummaryButtonCmd.classList.add('article-footer_right-btn');
+        lazySummaryButtonCmd.innerHTML = '<i class="fa fa-pencil" style="margin: 0rem 0.5rem 0rem 0.5rem;"></i><p>留言統整</p>';
+        lazySummaryButtonCmd.id = `lazy-summaryCmd-${postBody.querySelector('.c-article').id}`; // 生成唯一 ID
+        lazySummaryButtonCmd.style.display = 'flex';
+        lazySummaryButtonCmd.style.margin = '0.3rem 0.5rem 0rem 0rem';
+        // 將新的按鈕插入到 .article-footer_right 的開頭
+        //footerRight.insertBefore(lazySummaryButtonCmd, footerRight.firstChild);
+        postSection.querySelector('.c-reply__head')?.appendChild(lazySummaryButtonCmd);
+        // 添加點擊事件監聽器
+        lazySummaryButtonCmd.addEventListener('click', async () => {
+            scrollIntoBee(lazySummaryButtonCmd);
+            const postId = postBody.querySelector('.c-article').id.replace("cf", "");
+            // 檢查
+            if (lazySummaryButtonCmd.querySelector('p').textContent === '產生中...') {
+                return;
+            }
+            if (localStorage.getItem("oaiKey") === "sk-yourKey" || localStorage.getItem("oaiKey") === "") {
+                alert("請先設定 API Key 才能使用 AI 功能");
+                return;
+            }
+            if (document.getElementById(`${postId}-cleanCmd`) && lazySummaryButtonCmd.querySelector('p').textContent === '摺疊 ▲') {
+                //將本原建設為不可見 並將摺疊 ▲ 改為 展開 ▼
+                popElement(document.getElementById(`${postId}-cleanCmd`), "toggle");
+                lazySummaryButtonCmd.querySelector('p').textContent = '展開 ▼';
+                return;
+            }
+            if (document.getElementById(`${postId}-cleanCmd`) && lazySummaryButtonCmd.querySelector('p').textContent === '展開 ▼') {
+                popElement(document.getElementById(`${postId}-cleanCmd`), "toggle");
+                lazySummaryButtonCmd.querySelector('p').textContent = '摺疊 ▲';
+                return;
+            }
+
+            if (document.getElementById(`${postId}-cleanCmd`) && lazySummaryButtonCmd.querySelector('p').textContent !== '留言統整') {
+                return;
+            }
+            lazySummaryButtonCmd.querySelector('p').textContent = '產生中...';
+
+            // 找到 cmd 元素
+            let cmdContents = document.getElementById(`Commendlist_${postId}`).querySelectorAll('.c-reply__item');
+            // 展開留言
+            const showCmd = document.getElementById(`showoldCommend_${postId}`);
+            if (showCmd && (showCmd.style.display === 'block' || showCmd.style.display === '')) {
+                // 持續偵測 dom 直到留言展開
+                let cmdCount = cmdContents.length;
+                showCmd.click();
+                await new Promise((resolve) => {
+                    const observer = new MutationObserver((mutations) => {
+                        //console.log(document.getElementById(`Commendlist_${postId}`).querySelectorAll('.c-reply__item').length + '/' + cmdCount);
+                        if (document.getElementById(`Commendlist_${postId}`).querySelectorAll('.c-reply__item').length >= cmdCount) {
+                            cmdContents = document.getElementById(`Commendlist_${postId}`).querySelectorAll('.c-reply__item');
+                            // 第二次 DOM 改變後的程式碼
+                            document.getElementById(`closeCommend_${postId}`).click();
+                            console.log('s1');
+                            observer.disconnect(); // 停止觀察
+                            resolve();
+                        }
+                    });
+                    observer.observe(document.getElementById(`Commendlist_${postId}`), {
+                        childList: true, subtree: true,characterData: true
+                    });
+                });
+                console.log('s2');
+                document.getElementById(`closeCommend_${postId}`).click();
+            }
+            console.log('s3');
+            // 獲取全部 id跟留言內容 並結合成一個文本
+            // 文本格式 = "@" + id + "：" + 留言內容 + "\n"
+            let textContent = '';
+            let textContentOrigin = Array.from(cmdContents).map(node => node.innerHTML).join('');
+            cmdContents.forEach(node => {
+                textContent += "@" + node.querySelector(".reply-content__user").innerHTML + "：" + node.querySelector(".comment_content").innerHTML + "\n";
+            });
+
+            // 去除多餘的換行
+            textContent = textContent.replace(/\n+/g, '\n');
+            // 轉換回應
+            const pattern = /<a href="javascript:Forum\.C\.openCommentDialog\(\d+,\s*\d+,\d+\);">([^<]+)\((.*?)\)<\/a>/g;
+            const pattern2 = /<a target="_blank" href="https:\/\/home\.gamer\.com\.tw\/[^"]+">([^<]+)<\/a>/g;
+            textContent = textContent.replace(pattern, (match, prefix, name) => {
+                return `回應@${name} => `;
+            });
+            textContent = textContent.replace(pattern2, (match, name) => {
+                return `回應@${name}，`;
+            });
+            // 構建 GPT prompt
+            const prompt = localStorage.getItem('oaiPromptCmd') || '';
+
+            try {
+                const response = await fetch(localStorage.getItem("oaiBaseUrl"), {
+                    method: 'POST', headers: {
+                        'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('oaiKey')}`
+                    }, body: JSON.stringify({
+                        messages: [{
+                            role: "user", content: prompt,
+                        }, {
+                            role: "user", content: '對話內容：```' + textContent + '```',
+                        },],
+                        max_tokens: 4090,
+                        model: localStorage.getItem("oaiModel"),
+                        stream: false,
+                        temperature: 0.7,
+                        presence_penalty: 0,
+                        frequency_penalty: 0,
+                    })
+                });
+
+                if (!response.ok) {
+                    //throw new Error(`伺服器回應錯誤: ${response.status} ${response.statusText}`);
+                    alert('取得 GPT 回覆時發生錯誤，請稍後再試。');
+                    lazySummaryButtonCmd.querySelector('p').textContent = '留言統整';
+                    lazySummaryButtonCmd.disabled = false;
+                    return;
+                }
+
+                const data = await response.json();
+                //textContent 比對使用者並還原URL
+                const gptReply = restoreOriginalFormat(data.choices[0].message.content, textContentOrigin);
+                //debug mode
+                //const gptReply = restoreOriginalFormat(textContent, textContentOrigin);
+                // 創建新的 .c-article 元素
+                const newArticle = document.createElement('article');
+                newArticle.classList.add('c-reply__item', 'c-article', 'FM-P2');
+                newArticle.id = `${postId}-cleanCmd`;
+                newArticle.style.display = 'block';
+                newArticle.style.overflow = 'hidden';
+                newArticle.style.maxHeight = 'auto';
+                newArticle.style.minHeight = '0px';
+                // 創建新的 .c-article__content 元素並插入文本
+                const newContent = document.createElement('div');
+                newContent.classList.add('c-article__content');
+                newContent.style.whiteSpace = 'pre-wrap'; // 添加這行來顯示換行符號
+                //newContent.textContent = gptReply;
+                newContent.innerHTML = gptReply; // 使用 innerHTML 來插入包含 HTML 語法的內容
+                newArticle.appendChild(newContent);
+                // 將新的 .c-article 插入
+                lazySummaryButtonCmd.querySelector('p').textContent = '摺疊 ▲';
+                //postBody.appendChild(newArticle);
+                postSection.querySelector(".c-post__footer").insertBefore(newArticle, document.getElementById(`Commendlist_${postId}`));
+                await popElementInit(newArticle, true, "ud", true);
+            } catch (error) {
+                console.error('取得 GPT 回覆時發生錯誤:', error);
+                lazySummaryButtonCmd.querySelector('p').textContent = '懶人包';
+                lazySummaryButtonCmd.disabled = false
+                alert('取得 GPT 回覆時發生錯誤，請稍後再試。');
+            }
+        });
+
+
         // 跳過按鈕
         const skipFloorButtonLeft = document.createElement('a');
         skipFloorButtonLeft.classList.add('article-footer_right-btn');
@@ -923,6 +1077,7 @@ async function getPrompt() {
         localStorage.setItem('oaiPromptDate', data.oaiPromptDate);
         localStorage.setItem('oaiPrompt', data.oaiPrompt);
         localStorage.setItem('oaiPromptUpdateSleep', data.oaiPromptUpdateSleep);
+        localStorage.setItem('oaiPromptCmd', data.oaiPromptCmd);
         return data;
     } catch (error) {
         console.error('[ERROR] fetching prompt:', error);
@@ -940,7 +1095,7 @@ function openInFrame(url) {
     setTimeout(() => {
         /*document.querySelector('.bee_preview_wd').style.transform = 'translateX(0%) scaleX(' + 1 + ')';
         document.querySelector('.bee_preview_wd').style.opacity = '1';*/
-        popElement(document.querySelector('.bee_preview_wd'), "true", localStorage.getItem("preview_LR") === "true"?'rl':'lr');
+        popElement(document.querySelector('.bee_preview_wd'), "true", localStorage.getItem("preview_LR") === "true" ? 'rl' : 'lr');
     }, 1000);
 
     //wait 1 sec
@@ -1036,7 +1191,6 @@ function scrollIntoBee(element, marginOffset = 7) {
     }, 300);
 }
 
-
 function isInViewport(element) {
     const rect = element.getBoundingClientRect();
     return (rect.top >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight)
@@ -1044,4 +1198,29 @@ function isInViewport(element) {
         //rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
         //rect.right <= (window.innerWidth || document.documentElement.clientWidth)
     );
+}
+
+function restoreOriginalFormat(textContent, cmdContents) {
+    // 儲存所有在原始文本中找到的名字和對應的HTML
+    const nameToHtmlMap = new Map();
+
+    // 從原始文本(cmdContents)中提取所有HTML格式及對應的用戶名
+    const htmlPattern = /<a class="reply-content__user" href="\/\/home\.gamer\.com\.tw\/[^"]+" target="_blank">([^<]+)<\/a>/g;
+    let match;
+    while ((match = htmlPattern.exec(cmdContents)) !== null) {
+        nameToHtmlMap.set(match[1], match[0]);
+    }
+
+    // 在 textContent 中尋找並替換所有 @id
+    let processedText = textContent;
+    nameToHtmlMap.forEach((html, name) => {
+        /*const atPattern = new RegExp(`@${name}`, 'g');
+        processedText = processedText.replace(atPattern, html);*/
+        // 對特殊字符進行轉義
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const atPattern = new RegExp(`@${escapedName}`, 'g');
+        processedText = processedText.replace(atPattern, html);
+    });
+
+    return processedText;
 }
