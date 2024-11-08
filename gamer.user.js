@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      6.5
+// @version      6.6
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -18,8 +18,8 @@
     ("use strict");
     checkFirstRun();
     await addSettingElement();
-    worker_bPage();
-    worker_cPage();
+    await worker_bPage();
+    await worker_cPage();
     reportAlert();
 })();
 
@@ -122,27 +122,17 @@ async function addSettingElement() {
     const navAdd = document.createElement('li');
     navAdd.className = 'beeSettingTag';
     navAdd.innerHTML = '<a>插件設定</a>';
-    //click時，給 section-title-warp 切換 display:block / none
     navAdd.addEventListener('click', function () {
         let sectionTitleWarp = document.querySelector('.beeSettingWarp');
-        let getTopicElement = document.querySelector('.b-list');
-        if (sectionTitleWarp.style.maxHeight === (sectionTitleWarp.style.readHeight + 'px')) {
-            sectionTitleWarp.style.maxHeight = '0px';
-            document.querySelector('.b-list').style.display = 'table';
-        } else {
-            sectionTitleWarp.style.maxHeight = sectionTitleWarp.style.readHeight + 'px';
-            document.querySelector('.b-list').style.display = 'none';
-        }
+        popElement(sectionTitleWarp, "toggle", 'ud');
+        scrollIntoBee(document.querySelector('.b-list-wrap'),7);
     });
     navAddTag.appendChild(navAdd);
     // 取得 management-item 元素
-    //const lastManagementItem = document.querySelector('#BH-menu-path > ul > ul > li.BH-menu-forumA-right.dropList > dl/* > dd:nth-child(4)*/');
     const settingsWarp = document.querySelector('.b-list-wrap');
     // 插入新內容到最後一個 management-item 元素中
     const lastManagementItem = document.createElement('div');
     lastManagementItem.className = 'beeSettingWarp';
-    lastManagementItem.style.maxHeight = '0px';
-    lastManagementItem.style.overflow = 'hidden';
     const sectionTitle = document.createElement('h3');
     sectionTitle.className = 'section-title';
     sectionTitle.textContent = '插件設定（再點一次上方的【插件設定】即可返回【文章列表】）';
@@ -184,13 +174,11 @@ async function addSettingElement() {
     lastManagementItem.appendChild(createItemCard(null, null, {
         inputId: 'oaiPromptUpdateURL', labelText: '　└　oai prompt settings URL'
     }));
-    // createItemCard  會因為 id===bee_select_color 而增加寬度
     lastManagementItem.appendChild(createItemCard('showTips', '重新觀看TIPs'));
 
-    //settingsWarp.appendChild(lastManagementItem);
     settingsWarp.insertBefore(lastManagementItem, settingsWarp.firstChild);
 
-    await popElementInit(lastManagementItem, false);
+    await popElementInit(lastManagementItem, false, 'ud');
 }
 
 // 項目卡函數
@@ -267,7 +255,7 @@ function createItemCard(inputId, labelText, additionalContent = null) {
     return itemCard;
 }
 
-function worker_cPage() {
+async function worker_cPage() {
     if (!window.location.href.includes('forum.gamer.com.tw/C.php')) {
         return;
     }
@@ -278,15 +266,15 @@ function worker_cPage() {
     if (localStorage.getItem("addSummaryBtn") === "false") {
         return;
     }
-    postAddBtn();
+    await postAddBtn();
 }
 
-function worker_bPage() {
+async function worker_bPage() {
     if (window.location.href.includes('forum.gamer.com.tw/B.php')) {
         if (localStorage.getItem("preview_auto") === "true") {
             bPage_previewAuto();
         }
-        bPage_addFrame();
+        await bPage_addFrame();
         bPage_addMenu();
         bPage_new_checkbox();
         if (localStorage.getItem("new_design") === "true") {
@@ -307,7 +295,7 @@ function worker_bPage() {
     }
 }
 
-function bPage_addFrame() {
+async function bPage_addFrame() {
     //frame
     let beePreviewWd = document.createElement('div');
     beePreviewWd.className = 'bee_preview_wd';
@@ -317,26 +305,27 @@ function bPage_addFrame() {
     beePreviewWd.style.transform = 'scaleX(' + 0 + ')';
     beePreviewWd.style.zIndex = '100';
     beePreviewWd.style.position = 'fixed';
-    beePreviewWd.style.top = '1rem';
+    beePreviewWd.style.top = '0px';
     if (localStorage.getItem("preview_LR") === "true") {
         beePreviewWd.style.right = '1%';
     } else {
         beePreviewWd.style.left = '1%';
     }
-    beePreviewWd.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
-
-    document.body.appendChild(beePreviewWd);
+    //beePreviewWd.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
+    //document.body.appendChild(beePreviewWd);
 
     let beeFrame = document.createElement('iframe');
     beeFrame.id = 'bee_frame';
     beeFrame.title = 'bee_frame';
     beeFrame.src = '';
-    beeFrame.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
-    beeFrame.style.border = '1em solid rgb(170, 50, 220, 0)';
+    //beeFrame.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
+    beeFrame.style.border = '0em solid rgb(170, 50, 220, 0)';
     beeFrame.width = '100%';
-    beeFrame.height = '90%';
-
-    document.querySelector('.bee_preview_wd').appendChild(beeFrame);
+    beeFrame.height = '100%';
+    //document.querySelector('.bee_preview_wd').appendChild(beeFrame);
+    beePreviewWd.appendChild(beeFrame);
+    document.body.appendChild(beePreviewWd);
+    await popElementInit(beePreviewWd, false, localStorage.getItem("preview_LR") === "true"?'rl':'lr',false);
 
     //close frame by top menu
     let BHMenuPath = document.querySelector('#BH-menu-path');
@@ -346,11 +335,10 @@ function bPage_addFrame() {
     //BHMenuPath.style.backgroundColor = '#0e4355cc';
 
     BHMenuPath.addEventListener('click', () => {
-        //document.querySelector('.bee_preview_wd').style.width = '0%';
-        document.querySelector('.bee_preview_wd').style.transform = 'translateX(100%)';
-        document.querySelector('.bee_preview_wd').style.opacity = '0';
+        /*document.querySelector('.bee_preview_wd').style.transform = 'translateX(100%)';
+        document.querySelector('.bee_preview_wd').style.opacity = '0';*/
+        popElement(document.querySelector('.bee_preview_wd'), 'false', localStorage.getItem("preview_LR") === "true"?'rl':'lr');
         BHMenuPath.style.height = '40px';
-        //BHMenuPath.style.backgroundColor = '#0e4355cc';
         BHMenuPath.style.opacity = '1';
     });
 
@@ -747,7 +735,6 @@ async function postAddBtn() {
     // check if oaiUpdateDate is more than today (format: yyyymmdd)
     await getPrompt();
     // 尋找所有 .c-post__body 元素
-    //const postSections = document.querySelectorAll('.c-section');
     const postSections = Array.from(document.querySelectorAll('.c-section')).filter(postSection => postSection.querySelector('.c-post__body'));
     postSections.forEach(postSection => {
 
@@ -778,14 +765,20 @@ async function postAddBtn() {
             }
             if (document.getElementById(`${postBody.querySelector('.c-article').id}-clean`) && lazySummaryButton.querySelector('p').textContent === '摺疊 ▲') {
                 //將本原建設為不可見 並將摺疊 ▲ 改為 展開 ▼
+                //v1
                 //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'none';
-                document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.maxHeight = '0px';
+                //v2
+                //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.maxHeight = '0px';
+                popElement(document.getElementById(`${postBody.querySelector('.c-article').id}-clean`), "toggle");
                 lazySummaryButton.querySelector('p').textContent = '展開 ▼';
                 return;
             }
             if (document.getElementById(`${postBody.querySelector('.c-article').id}-clean`) && lazySummaryButton.querySelector('p').textContent === '展開 ▼') {
+                //v1
                 //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'block';
-                document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.maxHeight = document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.readHeight + 'px';
+                //v2
+                //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.maxHeight = document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.readHeight + 'px';
+                popElement(document.getElementById(`${postBody.querySelector('.c-article').id}-clean`), "toggle");
                 lazySummaryButton.querySelector('p').textContent = '摺疊 ▲';
                 return;
             }
@@ -854,21 +847,10 @@ async function postAddBtn() {
                 //newContent.textContent = gptReply;
                 newContent.innerHTML = gptReply; // 使用 innerHTML 來插入包含 HTML 語法的內容
                 newArticle.appendChild(newContent);
-
-                // 確保在元素被添加到 DOM 並渲染後再取得高度
-                /*requestAnimationFrame(() => {
-                    newArticle.style.readHeight = newArticle.scrollHeight;
-                });
-                newArticle.style.maxHeight = '0px';
-                newArticle.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
-                requestAnimationFrame(() => {
-                    newArticle.style.maxHeight = newArticle.style.readHeight + 'px';
-                });*/
-                await popElementInit(newArticle);
+                // 將新的 .c-article 插入
                 lazySummaryButton.querySelector('p').textContent = '摺疊 ▲';
-
-                // 將新的 .c-article 插入到 .c-post__body__buttonbar 之後
-                postBody.querySelector('.c-post__body__buttonbar').insertAdjacentElement('afterend', newArticle);
+                postBody.appendChild(newArticle);
+                await popElementInit(newArticle);
             } catch (error) {
                 console.error('取得 GPT 回覆時發生錯誤:', error);
                 lazySummaryButton.querySelector('p').textContent = '懶人包';
@@ -895,7 +877,6 @@ async function postAddBtn() {
             } else {
                 scrollIntoBee(footerRight);
             }
-            //scrollIntoBee(footerRight);
         });
         // 跳到懶人包按鈕
         const lazySummaryButtonLeft = document.createElement('a');
@@ -956,11 +937,11 @@ function openInFrame(url) {
     let BHMenuPath = document.querySelector('#BH-menu-path');
     BHMenuPath.style.height = '100%';
     BHMenuPath.style.opacity = '0.6';
-
     setTimeout(() => {
-        document.querySelector('.bee_preview_wd').style.transform = 'translateX(0%) scaleX(' + 1 + ')';
-        document.querySelector('.bee_preview_wd').style.opacity = '1';
-    }, 500);
+        /*document.querySelector('.bee_preview_wd').style.transform = 'translateX(0%) scaleX(' + 1 + ')';
+        document.querySelector('.bee_preview_wd').style.opacity = '1';*/
+        popElement(document.querySelector('.bee_preview_wd'), "true", localStorage.getItem("preview_LR") === "true"?'rl':'lr');
+    }, 1000);
 
     //wait 1 sec
     setTimeout(() => {
@@ -971,52 +952,76 @@ function openInFrame(url) {
         sheet.insertRule('.managertools { position: fixed; bottom: 0; right: 0; z-index: 100; }', 0);
     }, 1000);
 
-
-    /*iframe.onload = function () {
-        let iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        let iframeElement = iframeDoc.querySelector('.managertools');
-        iframeElement.style.position = 'fixed';
-        iframeElement.style.top = '0';
-        iframeElement.style.right = '0';
-        iframeElement.style.zIndex = '100';
-    };*/
-    /*document.getElementById('bee_frame').src = url;
-    let BHMenuPath = document.querySelector('#BH-menu-path');
-    BHMenuPath.style.height = '100%';
-    BHMenuPath.style.opacity = '0.6';
-    //run after 0.5s
-    setTimeout(() => {
-        //document.querySelector('.bee_preview_wd').style.width = localStorage.getItem("preview_size");
-        document.querySelector('.bee_preview_wd').style.transform = 'translateX(0%) scaleX(' + 1 + ')';
-        document.querySelector('.bee_preview_wd').style.opacity = '1';
-    }, 500);
-    //change the element in iframe '#BH-master > form:nth-child(5) > section:nth-child(52) > div' css to 'position: fixed; top: 0; right: 0;' while iframe loaded
-    document.getElementById('bee_frame').onload = function () {
-        let iframe = document.getElementById('bee_frame');
-        let iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        let iframeElement = iframeDoc.querySelector('#BH-master > form > section > div');
-        iframeElement.style.position = 'fixed';
-        iframeElement.style.top = '0';
-        iframeElement.style.right = '0';
-    };*/
-
 }
 
-async function popElementInit(element, show = true) {
-    // 確保在元素被添加到 DOM 並渲染後再取得高度
-    requestAnimationFrame(() => {
+async function popElementInit(element, show = true, anime = "ud", waitAppend = true) {
+    if (waitAppend) {
+        requestAnimationFrame(() => {
+            element.style.readHeight = element.scrollHeight;
+            element.style.readWidth = element.scrollWidth;
+            //console.log('after frame',element.style.readHeight, '/', element.style.readWidth);
+        });
+    } else {
         element.style.readHeight = element.scrollHeight;
-    });
-    element.style.maxHeight = '0px';
+        element.style.readWidth = element.scrollWidth;
+        //console.log('without wait',element.style.readHeight, '/', element.style.readWidth);
+    }
+
+    element.style.transition = '';
+    element.style.overflow = 'hidden';
+    element.style.opacity = '0';
+    popElement(element, "false", anime);
     element.style.transition = 'all 0.5s cubic-bezier(0.21, 0.3, 0.18, 1.37) 0s';
     if (!show) {
+        element.style.beeShow = "false";
         return;
     }
+    element.style.beeShow = "true";
+    element.style.opacity = '1';
     requestAnimationFrame(() => {
+        //console.log(element.scrollWidth, '///', element.scrollHeight, '///', element.style.readWidth, '///', element.style.readHeight);
         element.style.maxHeight = element.style.readHeight + 'px';
     });
 }
 
+function popElement(element, show = "true", anime = "ud") {
+    let doShow;
+    if (show === "toggle") {
+        doShow = !(element.style.beeShow === "true");
+    } else {
+        doShow = show === "true";
+    }
+    if (doShow) {
+        element.style.opacity = '1';
+        element.style.maxHeight = element.style.readHeight + 'px';
+        element.style.maxWidth = element.style.readWidth + 'px';
+        element.style.transform = 'translateX(0px) translateY(0px)';
+        element.style.beeShow = "true";
+        return;
+    }
+    element.style.beeShow = "false";
+    element.style.opacity = '0';
+    if (anime.includes("u")) {
+        element.style.opacity = '0';
+        element.style.maxHeight = '0px';
+        if (anime.startsWith("d")) {
+            element.style.transform = `translateX(0px) translateY(${element.style.readWidth}px)`;
+            //move as same as how it was
+            /*element.style.marginTop = `${parseInt(element.style.marginTop.replace("px", ""))
+            + parseInt(element.style.readHeight.replace("px", ""))}px`;*/
+        }
+    }
+    if (anime.includes("l")) {
+        element.style.opacity = '0';
+        element.style.maxWidth = '0px';
+        if (anime.startsWith("r")) {
+            element.style.transform = `translateX(${element.style.readHeight}px) translateY(0px)`;
+            //move as same as how it was
+            /*element.style.marginLeft = `${parseInt(element.style.marginLeft.replace("px", ""))
+            + parseInt(element.style.readWidth.replace("px", ""))}px`;*/
+        }
+    }
+}
 
 function scrollIntoBee(element, marginOffset = 7) {
     const temp_marginTop = (element.style.marginTop === undefined || '') ? '0px' : element.style.marginTop;
