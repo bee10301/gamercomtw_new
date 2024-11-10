@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.2
+// @version      7.3
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -94,6 +94,9 @@ function checkFirstRun(reset = false) {
         key: "oaiPromptChat",
         defaultValue: "根據文章內容，使用繁體中文流暢語言，簡潔的回答使用者的問題。"
     }, {
+        key: "oaiPromptSystemMode",
+        defaultValue: "true"
+    }, {
         key: "oaiPromptDate", defaultValue: "20241101"
     }, {
         key: "oaiPromptUpdateDate", defaultValue: "20241101"
@@ -181,6 +184,7 @@ async function addSettingElement() {
     lastManagementItem.appendChild(createItemCard(null, null, {
         inputId: 'oaiPromptChat', labelText: '　├　「問問」自訂提示詞'
     }));
+    lastManagementItem.appendChild(createItemCard('oaiPromptSystemMode', '　├　自訂提示詞使用 system 模式'));
     lastManagementItem.appendChild(createItemCard(null, null, {
         inputId: 'oaiPromptUpdateURL', labelText: '　└　oai prompt settings URL'
     }));
@@ -1019,7 +1023,8 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
             // 構建 GPT prompt
             const prompt = localStorage.getItem('oaiPromptChat') || '';
             gptArray.push({
-                role: "system", content: prompt,
+                role: localStorage.getItem("oaiPromptSystemMode") === "true" ? "system" : "user",
+                content: prompt,
             });
             gptArray.push({
                 role: "user", content: "文章內容：\n```\n" + textContent + "\n```",
@@ -1135,7 +1140,8 @@ async function postGpt(promptSystem, promptUser) {
                 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('oaiKey')}`
             }, body: JSON.stringify({
                 messages: [{
-                    role: "system", content: promptSystem,
+                    role: localStorage.getItem("oaiPromptSystemMode") === "true" ? "system" : "user",
+                    content: promptSystem,
                 }, {
                     role: "user", content: promptUser,
                 },],
