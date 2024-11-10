@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.4
+// @version      7.5
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -1127,6 +1127,9 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
             /*document.querySelectorAll('.chatHistory').forEach((chat) => {
                 popElement(chat, "toggle");
             });*/
+
+            chatArea.style.readHeight = chatArea.scrollHeight === 0 ? `999px` : `${chatArea.scrollHeight}px`;
+            chatArea.style.readWidth = chatArea.scrollWidth === 0 ? `999px` : `${chatArea.scrollWidth}px`;
             popElement(chatArea, "toggle");
             askButton.querySelector('p').textContent = '問問 ▼';
             return;
@@ -1392,8 +1395,8 @@ function popElement(element, show = "true", anime = "ud") {
     }
     element.style.beeShow = "false";
     element.style.opacity = '0';
-    element.style.readHeight = element.scrollHeight === 0 ? `999px` : `${element.scrollHeight}px`;
-    element.style.readWidth = element.scrollWidth === 0 ? `999px` : `${element.scrollWidth}px`;
+    //element.style.readHeight = element.scrollHeight === 0 ? `999px` : `${element.scrollHeight}px`;
+    //element.style.readWidth = element.scrollWidth === 0 ? `999px` : `${element.scrollWidth}px`;
     if (anime.includes("u")) {
         element.style.opacity = '0';
         element.style.maxHeight = '0px';
