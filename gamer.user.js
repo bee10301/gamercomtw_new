@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.7
+// @version      7.8
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -263,7 +263,7 @@ function createItemCard(inputId, labelText, additionalContent = null) {
         input.type = 'text';
         input.size = 25;
         input.style.margin = '0px';
-        input.style.width = additionalContent.inputId.startsWith('oai') ? 'auto' : '70px';
+        input.style.width = additionalContent.inputId.startsWith('custom_') ? 'auto' : '70px';
 
         // 如果 localStorage 有儲存的值，則設置為該值
         input.value = localStorage.getItem(additionalContent.inputId) || '';
