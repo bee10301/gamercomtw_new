@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.6
+// @version      7.7
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -93,6 +93,13 @@ function checkFirstRun(reset = false) {
     }, {
         key: "oaiPromptChat", defaultValue: "根據文章內容，使用繁體中文流暢語言，簡潔的回答使用者的問題。"
     }, {
+        key: "custom_oaiPrompt", defaultValue: ""
+    }, {
+        key: "custom_oaiPromptCmd",
+        defaultValue: ""
+    }, {
+        key: "custom_oaiPromptChat", defaultValue: ""
+    }, {
         key: "oaiPromptSystemMode", defaultValue: "true"
     }, {
         key: "oaiPromptDate", defaultValue: "20241101"
@@ -180,13 +187,13 @@ async function addSettingElement() {
         inputId: 'oaiKey', labelText: '　├　oai key'
     }));
     lastManagementItem.appendChild(createItemCard(null, null, {
-        inputId: 'oaiPrompt', labelText: '　├　「懶人包」提示詞（留空=預設）'
+        inputId: 'custom_oaiPrompt', labelText: '　├　「懶人包」提示詞（留空=預設）'
     }));
     lastManagementItem.appendChild(createItemCard(null, null, {
-        inputId: 'oaiPromptCmd', labelText: '　├　「留言統整」自訂提示詞（留空=預設）'
+        inputId: 'custom_oaiPromptCmd', labelText: '　├　「留言統整」自訂提示詞（留空=預設）'
     }));
     lastManagementItem.appendChild(createItemCard(null, null, {
-        inputId: 'oaiPromptChat', labelText: '　├　「問問」自訂提示詞（留空=預設）'
+        inputId: 'custom_oaiPromptChat', labelText: '　├　「問問」自訂提示詞（留空=預設）'
     }));
     lastManagementItem.appendChild(createItemCard('oaiPromptSystemMode', '├　自訂提示詞使用 system 模式'));
     lastManagementItem.appendChild(createItemCard(null, null, {
@@ -849,7 +856,8 @@ function addSummaryCmdBtn(postSection) {
         getCmdById(postId).then(async (cmdData) => {
             // 構建 GPT prompt
             //如果空，則從settings陣列裡面oaiPromptCmd取得default
-            const prompt = localStorage.getItem('oaiPromptCmd') || settings.find(setting => setting.key === 'oaiPromptCmd').defaultValue;
+            const custom_oaiPromptCmd = localStorage.getItem('custom_oaiPromptCmd');
+            const prompt = (!custom_oaiPromptCmd || custom_oaiPromptCmd === '') ? settings.find(setting => setting.key === 'oaiPromptCmd').defaultValue : custom_oaiPromptCmd;
             postGpt(prompt, '對話內容：\n ```' + cmdData.textContent + '\n```').then(async ({response, data}) => {
                 if (!response) {
                     lazySummaryButtonCmd.querySelector('p').textContent = '留言統整';
@@ -949,7 +957,8 @@ function addSummaryBtn(postSection) {
         textContent = textContent.replace(/\n+/g, '\n');
 
         // 構建 GPT prompt
-        const prompt = localStorage.getItem('oaiPrompt') || settings.find(setting => setting.key === 'oaiPrompt').defaultValue;
+        const custom_oaiPrompt = localStorage.getItem('custom_oaiPrompt');
+        const prompt = (!custom_oaiPrompt || custom_oaiPrompt === '') ? settings.find(setting => setting.key === 'oaiPrompt').defaultValue : custom_oaiPrompt;
         postGpt(prompt, '文章內容：```' + textContent + '```').then(async ({response, data}) => {
             if (!response) {
                 lazySummaryButton.querySelector('p').textContent = '懶人包';
@@ -1034,7 +1043,8 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
             // 去除多餘的換行
             textContent = textContent.replace(/\n+/g, '\n');
             // 構建 GPT prompt
-            const prompt = localStorage.getItem('oaiPromptChat') || settings.find(setting => setting.key === 'oaiPromptChat').defaultValue;
+            const custom_oaiPromptChat = localStorage.getItem('custom_oaiPromptChat');
+            const prompt = (!custom_oaiPromptChat || custom_oaiPromptChat === '') ? settings.find(setting => setting.key === 'oaiPromptChat').defaultValue : custom_oaiPromptChat;
             gptArray.push({
                 role: localStorage.getItem("oaiPromptSystemMode") === "true" ? "system" : "user", content: prompt,
             });
