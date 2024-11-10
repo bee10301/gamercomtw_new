@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.5
+// @version      7.6
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -107,7 +107,7 @@ function checkFirstRun(reset = false) {
     ];
 
     settings.forEach(setting => {
-        if (localStorage.getItem(setting.key) === null || reset === true) {
+        if ((localStorage.getItem(setting.key) === '' || localStorage.getItem(setting.key) === null) || reset === true) {
             localStorage.setItem(setting.key, setting.defaultValue);
         }
     });
@@ -180,7 +180,13 @@ async function addSettingElement() {
         inputId: 'oaiKey', labelText: '　├　oai key'
     }));
     lastManagementItem.appendChild(createItemCard(null, null, {
-        inputId: 'oaiPromptChat', labelText: '　├　「問問」自訂提示詞'
+        inputId: 'oaiPrompt', labelText: '　├　「懶人包」提示詞（留空=預設）'
+    }));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'oaiPromptCmd', labelText: '　├　「留言統整」自訂提示詞（留空=預設）'
+    }));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'oaiPromptChat', labelText: '　├　「問問」自訂提示詞（留空=預設）'
     }));
     lastManagementItem.appendChild(createItemCard('oaiPromptSystemMode', '├　自訂提示詞使用 system 模式'));
     lastManagementItem.appendChild(createItemCard(null, null, {
@@ -842,8 +848,9 @@ function addSummaryCmdBtn(postSection) {
 
         getCmdById(postId).then(async (cmdData) => {
             // 構建 GPT prompt
-            const prompt = localStorage.getItem('oaiPromptCmd') || '';
-            postGpt(prompt, '對話內容：```' + cmdData.textContent + '```').then(async ({response, data}) => {
+            //如果空，則從settings陣列裡面oaiPromptCmd取得default
+            const prompt = localStorage.getItem('oaiPromptCmd') || settings.find(setting => setting.key === 'oaiPromptCmd').defaultValue;
+            postGpt(prompt, '對話內容：\n ```' + cmdData.textContent + '\n```').then(async ({response, data}) => {
                 if (!response) {
                     lazySummaryButtonCmd.querySelector('p').textContent = '留言統整';
                     return;
@@ -919,7 +926,7 @@ function addSummaryBtn(postSection) {
             //v1
             //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.display = 'block';
             //v2
-            //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.maxHeight = document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.readHeight + 'px';
+            //document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.maxHeight = document.getElementById(`${postBody.querySelector('.c-article').id}-clean`).style.readHeight;
             popElement(document.getElementById(`${postBody.querySelector('.c-article').id}-clean`), "toggle");
             lazySummaryButton.querySelector('p').textContent = '摺疊 ▲';
             return;
@@ -942,7 +949,7 @@ function addSummaryBtn(postSection) {
         textContent = textContent.replace(/\n+/g, '\n');
 
         // 構建 GPT prompt
-        const prompt = localStorage.getItem('oaiPrompt') || '';
+        const prompt = localStorage.getItem('oaiPrompt') || settings.find(setting => setting.key === 'oaiPrompt').defaultValue;
         postGpt(prompt, '文章內容：```' + textContent + '```').then(async ({response, data}) => {
             if (!response) {
                 lazySummaryButton.querySelector('p').textContent = '懶人包';
@@ -1027,7 +1034,7 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
             // 去除多餘的換行
             textContent = textContent.replace(/\n+/g, '\n');
             // 構建 GPT prompt
-            const prompt = localStorage.getItem('oaiPromptChat') || '';
+            const prompt = localStorage.getItem('oaiPromptChat') || settings.find(setting => setting.key === 'oaiPromptChat').defaultValue;
             gptArray.push({
                 role: localStorage.getItem("oaiPromptSystemMode") === "true" ? "system" : "user", content: prompt,
             });
@@ -1373,8 +1380,8 @@ async function popElementInit(element, show = true, anime = "ud", waitAppend = t
     element.style.beeShow = "true";
     element.style.opacity = '1';
     requestAnimationFrame(() => {
-        //console.log(element.scrollWidth, '///', element.scrollHeight, '///', element.style.readWidth, '///', element.style.readHeight);
-        element.style.maxHeight = element.style.readHeight + 'px';
+        console.log(element.scrollWidth, '///', element.scrollHeight, '///', element.style.readWidth, '///', element.style.readHeight);
+        element.style.maxHeight = element.style.readHeight;
     });
 }
 
@@ -1411,7 +1418,7 @@ function popElement(element, show = "true", anime = "ud") {
         element.style.opacity = '0';
         element.style.maxWidth = '0px';
         if (anime.startsWith("r")) {
-            element.style.transform = `translateX(${element.style.readHeight}px) translateY(0px)`;
+            element.style.transform = `translateX(${element.style.readHeight}) translateY(0px)`;
             //move as same as how it was
             /*element.style.marginLeft = `${parseInt(element.style.marginLeft.replace("px", ""))
             + parseInt(element.style.readWidth.replace("px", ""))}px`;*/
