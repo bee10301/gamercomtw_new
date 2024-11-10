@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.8
+// @version      7.9
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -857,7 +857,7 @@ function addSummaryCmdBtn(postSection) {
             // 構建 GPT prompt
             //如果空，則從settings陣列裡面oaiPromptCmd取得default
             const custom_oaiPromptCmd = localStorage.getItem('custom_oaiPromptCmd');
-            const prompt = (!custom_oaiPromptCmd || custom_oaiPromptCmd === '') ? settings.find(setting => setting.key === 'oaiPromptCmd').defaultValue : custom_oaiPromptCmd;
+            const prompt = (!custom_oaiPromptCmd || custom_oaiPromptCmd === '') ? localStorage.getItem('oaiPromptCmd') : custom_oaiPromptCmd;
             postGpt(prompt, '對話內容：\n ```' + cmdData.textContent + '\n```').then(async ({response, data}) => {
                 if (!response) {
                     lazySummaryButtonCmd.querySelector('p').textContent = '留言統整';
@@ -958,7 +958,7 @@ function addSummaryBtn(postSection) {
 
         // 構建 GPT prompt
         const custom_oaiPrompt = localStorage.getItem('custom_oaiPrompt');
-        const prompt = (!custom_oaiPrompt || custom_oaiPrompt === '') ? settings.find(setting => setting.key === 'oaiPrompt').defaultValue : custom_oaiPrompt;
+        const prompt = (!custom_oaiPrompt || custom_oaiPrompt === '') ? localStorage.getItem('oaiPrompt') : custom_oaiPrompt;
         postGpt(prompt, '文章內容：```' + textContent + '```').then(async ({response, data}) => {
             if (!response) {
                 lazySummaryButton.querySelector('p').textContent = '懶人包';
@@ -1044,7 +1044,7 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
             textContent = textContent.replace(/\n+/g, '\n');
             // 構建 GPT prompt
             const custom_oaiPromptChat = localStorage.getItem('custom_oaiPromptChat');
-            const prompt = (!custom_oaiPromptChat || custom_oaiPromptChat === '') ? settings.find(setting => setting.key === 'oaiPromptChat').defaultValue : custom_oaiPromptChat;
+            const prompt = (!custom_oaiPromptChat || custom_oaiPromptChat === '') ? localStorage.getItem('oaiPromptChat') : custom_oaiPromptChat;
             gptArray.push({
                 role: localStorage.getItem("oaiPromptSystemMode") === "true" ? "system" : "user", content: prompt,
             });
