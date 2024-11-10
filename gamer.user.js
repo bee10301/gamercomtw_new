@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.3
+// @version      7.4
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -91,11 +91,9 @@ function checkFirstRun(reset = false) {
         key: "oaiPromptCmd",
         defaultValue: "以下是一段群組聊天的對話，總結對話中的話題，用條列式列出使用者的想法。\n## workflow \n 1. 整理話題：理解各個使用者討論的話題並以話題為單位整理出整串對話的話題 \n 2. 將相同話題中，對同一件事有相似想法的對話整理在一起(例如 `@user1/@user2：認為太貴了`) ，不同看法則單獨列出。\n 3. 輸出：把冗餘贅字優化，但保留具體描述。(劣例:`@user1/@user2：提及角色在世界觀中的地位和特徵` 在這個例子中沒有具體描述提即了什麼樣的地位或特徵)。使用者以 @id 標記並且不再添加其他md語法。 \n ## MUST/IMPORTANT/RULES \n- 不能添加其他個人觀點或註釋。\n- 使用繁體中文\n"
     }, {
-        key: "oaiPromptChat",
-        defaultValue: "根據文章內容，使用繁體中文流暢語言，簡潔的回答使用者的問題。"
+        key: "oaiPromptChat", defaultValue: "根據文章內容，使用繁體中文流暢語言，簡潔的回答使用者的問題。"
     }, {
-        key: "oaiPromptSystemMode",
-        defaultValue: "true"
+        key: "oaiPromptSystemMode", defaultValue: "true"
     }, {
         key: "oaiPromptDate", defaultValue: "20241101"
     }, {
@@ -184,7 +182,7 @@ async function addSettingElement() {
     lastManagementItem.appendChild(createItemCard(null, null, {
         inputId: 'oaiPromptChat', labelText: '　├　「問問」自訂提示詞'
     }));
-    lastManagementItem.appendChild(createItemCard('oaiPromptSystemMode', '　├　自訂提示詞使用 system 模式'));
+    lastManagementItem.appendChild(createItemCard('oaiPromptSystemMode', '├　自訂提示詞使用 system 模式'));
     lastManagementItem.appendChild(createItemCard(null, null, {
         inputId: 'oaiPromptUpdateURL', labelText: '　└　oai prompt settings URL'
     }));
@@ -996,6 +994,14 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
     popElementInit(askInput, false, "ud", true).then(r => {
 
     });
+    //create chat area
+    const chatArea = document.createElement('div');
+    chatArea.classList.add('chatArea');
+    chatArea.style.overflow = 'hidden';
+    postBody.insertBefore(chatArea, askInput);
+    popElementInit(chatArea, false, "ud", false).then(r => {
+    });
+
     // while user press Enter
     askTextarea.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -1023,8 +1029,7 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
             // 構建 GPT prompt
             const prompt = localStorage.getItem('oaiPromptChat') || '';
             gptArray.push({
-                role: localStorage.getItem("oaiPromptSystemMode") === "true" ? "system" : "user",
-                content: prompt,
+                role: localStorage.getItem("oaiPromptSystemMode") === "true" ? "system" : "user", content: prompt,
             });
             gptArray.push({
                 role: "user", content: "文章內容：\n```\n" + textContent + "\n```",
@@ -1067,9 +1072,9 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
                 userContent.style.whiteSpace = 'pre-wrap';
                 userContent.innerHTML = tempUserInput;
                 userArticle.appendChild(userContent);
-                //postBody.appendChild(userArticle);
-                postBody.insertBefore(userArticle, askInput);
-                await popElementInit(userArticle, true, "ud", true);
+                //postBody.insertBefore(userArticle, askInput);
+                chatArea.appendChild(userArticle);
+                //await popElementInit(userArticle, true, "ud", true);
                 askTextarea.value = '';
 
                 // 創建新的 .c-article 元素
@@ -1086,9 +1091,14 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
                 newContent.innerHTML = data.choices[0].message.content;
                 newArticle.appendChild(newContent);
                 askTextarea.placeholder = '詢問⋯';
-                //postBody.appendChild(newArticle);
-                postBody.insertBefore(newArticle, askInput);
-                await popElementInit(newArticle, true, "ud", true);
+                //postBody.insertBefore(newArticle, askInput);
+                chatArea.appendChild(newArticle);
+                //await popElementInit(newArticle, true, "ud", true);
+                // set chatArea readHeight
+                requestAnimationFrame(() => {
+                    chatArea.readHeight = `${chatArea.scrollHeight}px`;
+                    chatArea.style.maxHeight = `${chatArea.scrollHeight}px`;
+                });
                 //focus to input
                 askTextarea.focus();
             });
@@ -1114,17 +1124,19 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
         if (askButton.querySelector('p').textContent === '問問 ▲') {
             //將本原建設為不可見 並將摺疊 ▲ 改為 展開 ▼
             popElement(askInput, "toggle");
-            document.querySelectorAll('.chatHistory').forEach((chat) => {
+            /*document.querySelectorAll('.chatHistory').forEach((chat) => {
                 popElement(chat, "toggle");
-            });
+            });*/
+            popElement(chatArea, "toggle");
             askButton.querySelector('p').textContent = '問問 ▼';
             return;
         }
         if (askButton.querySelector('p').textContent === '問問 ▼') {
             popElement(askInput, "toggle");
-            document.querySelectorAll('.chatHistory').forEach((chat) => {
+            /*document.querySelectorAll('.chatHistory').forEach((chat) => {
                 popElement(chat, "toggle");
-            });
+            });*/
+            popElement(chatArea, "toggle");
             askButton.querySelector('p').textContent = '問問 ▲';
             //focus to input
             askTextarea.focus();
@@ -1336,13 +1348,13 @@ function openInFrame(url) {
 async function popElementInit(element, show = true, anime = "ud", waitAppend = true) {
     if (waitAppend) {
         requestAnimationFrame(() => {
-            element.style.readHeight = element.scrollHeight;
-            element.style.readWidth = element.scrollWidth;
+            element.style.readHeight = element.scrollHeight === 0 ? `999px` : `${element.scrollHeight}px`;
+            element.style.readWidth = element.scrollWidth === 0 ? `999px` : `${element.scrollWidth}px`;
             //console.log('after frame',element.style.readHeight, '/', element.style.readWidth);
         });
     } else {
-        element.style.readHeight = element.scrollHeight;
-        element.style.readWidth = element.scrollWidth;
+        element.style.readHeight = element.scrollHeight === 0 ? `999px` : `${element.scrollHeight}px`;
+        element.style.readWidth = element.scrollWidth === 0 ? `999px` : `${element.scrollWidth}px`;
         //console.log('without wait',element.style.readHeight, '/', element.style.readWidth);
     }
 
@@ -1372,14 +1384,16 @@ function popElement(element, show = "true", anime = "ud") {
     }
     if (doShow) {
         element.style.opacity = '1';
-        element.style.maxHeight = element.style.readHeight + 'px';
-        element.style.maxWidth = element.style.readWidth + 'px';
+        element.style.maxHeight = element.style.readHeight;
+        element.style.maxWidth = element.style.readWidth;
         element.style.transform = 'translateX(0px) translateY(0px)';
         element.style.beeShow = "true";
         return;
     }
     element.style.beeShow = "false";
     element.style.opacity = '0';
+    element.style.readHeight = element.scrollHeight === 0 ? `999px` : `${element.scrollHeight}px`;
+    element.style.readWidth = element.scrollWidth === 0 ? `999px` : `${element.scrollWidth}px`;
     if (anime.includes("u")) {
         element.style.opacity = '0';
         element.style.maxHeight = '0px';
