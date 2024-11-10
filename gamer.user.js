@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.1
+// @version      7.2
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://forum.gamer.com.tw/B.php?*
@@ -91,6 +91,9 @@ function checkFirstRun(reset = false) {
         key: "oaiPromptCmd",
         defaultValue: "以下是一段群組聊天的對話，總結對話中的話題，用條列式列出使用者的想法。\n## workflow \n 1. 整理話題：理解各個使用者討論的話題並以話題為單位整理出整串對話的話題 \n 2. 將相同話題中，對同一件事有相似想法的對話整理在一起(例如 `@user1/@user2：認為太貴了`) ，不同看法則單獨列出。\n 3. 輸出：把冗餘贅字優化，但保留具體描述。(劣例:`@user1/@user2：提及角色在世界觀中的地位和特徵` 在這個例子中沒有具體描述提即了什麼樣的地位或特徵)。使用者以 @id 標記並且不再添加其他md語法。 \n ## MUST/IMPORTANT/RULES \n- 不能添加其他個人觀點或註釋。\n- 使用繁體中文\n"
     }, {
+        key: "oaiPromptChat",
+        defaultValue: "根據文章內容，使用繁體中文流暢語言，簡潔的回答使用者的問題。"
+    }, {
         key: "oaiPromptDate", defaultValue: "20241101"
     }, {
         key: "oaiPromptUpdateDate", defaultValue: "20241101"
@@ -174,6 +177,9 @@ async function addSettingElement() {
     }));
     lastManagementItem.appendChild(createItemCard(null, null, {
         inputId: 'oaiKey', labelText: '　├　oai key'
+    }));
+    lastManagementItem.appendChild(createItemCard(null, null, {
+        inputId: 'oaiPromptChat', labelText: '　├　「問問」自訂提示詞'
     }));
     lastManagementItem.appendChild(createItemCard(null, null, {
         inputId: 'oaiPromptUpdateURL', labelText: '　└　oai prompt settings URL'
@@ -1011,8 +1017,12 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
             // 去除多餘的換行
             textContent = textContent.replace(/\n+/g, '\n');
             // 構建 GPT prompt
+            const prompt = localStorage.getItem('oaiPromptChat') || '';
             gptArray.push({
-                role: "user", content: "請根據文章內容討論：\n```\n" + textContent + "\n```",
+                role: "system", content: prompt,
+            });
+            gptArray.push({
+                role: "user", content: "文章內容：\n```\n" + textContent + "\n```",
             });
             // 取得對話紀錄(user-ask + gpt-reply)
             const chatHistory = postBody.querySelectorAll('.chatHistory');
@@ -1063,6 +1073,7 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
                 newArticle.id = `${postBody.querySelector('.c-article').id}-reply-${Date.now()}`;
                 newArticle.style.display = 'block';
                 newArticle.style.minHeight = '0px';
+                newArticle.style.marginBottom = '1.6rem';
                 newArticle.style.borderBottom = '1px solid var(--primary)';
                 const newContent = document.createElement('div');
                 newContent.classList.add('c-article__content');
@@ -1124,7 +1135,7 @@ async function postGpt(promptSystem, promptUser) {
                 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('oaiKey')}`
             }, body: JSON.stringify({
                 messages: [{
-                    role: "user", content: promptSystem,
+                    role: "system", content: promptSystem,
                 }, {
                     role: "user", content: promptUser,
                 },],
