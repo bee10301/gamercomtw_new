@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      7.9
+// @version      8.0
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
+// @match        https://www.gamer.com.tw
 // @match        https://forum.gamer.com.tw/B.php?*
 // @match        https://forum.gamer.com.tw/C.php?*
 // @homepage     https://home.gamer.com.tw/home.php?owner=bee10301
@@ -21,6 +22,8 @@
     await addSettingElement();
     await worker_bPage();
     await worker_cPage();
+    worker_home();
+    checkTips();
     reportAlert();
 })();
 
@@ -38,7 +41,7 @@ function checkFirstRun(reset = false) {
     // new_design_LRSwitch > 左右對調（聊天室在左方，讓文章標題在螢幕中間）
     // bee_select_color > 勾選文章時的顏色（可含有透明度屬性）
     // preview_LR > 即時瀏覽視窗的位置
-    const settings = [{key: "isFirstRun", defaultValue: "false"}, {
+    const settingsB = [{key: "isFirstRun", defaultValue: "false"}, {
         key: "add_function", defaultValue: "true"
     }, {
         key: "preview_auto", defaultValue: "true"
@@ -95,8 +98,7 @@ function checkFirstRun(reset = false) {
     }, {
         key: "custom_oaiPrompt", defaultValue: ""
     }, {
-        key: "custom_oaiPromptCmd",
-        defaultValue: ""
+        key: "custom_oaiPromptCmd", defaultValue: ""
     }, {
         key: "custom_oaiPromptChat", defaultValue: ""
     }, {
@@ -113,20 +115,38 @@ function checkFirstRun(reset = false) {
         // Add other settings as needed
     ];
 
+    const settingsHome = [{key: "homeStyleSwitch", defaultValue: "true"}, {
+        key: "homeTips", defaultValue: "true"
+    }];
+
+    let settings = window.location.href.includes('forum.gamer.com.tw/B.php') ? settingsB : settingsHome;
     settings.forEach(setting => {
         if ((localStorage.getItem(setting.key) === '' || localStorage.getItem(setting.key) === null) || reset === true) {
             localStorage.setItem(setting.key, setting.defaultValue);
         }
     });
-    if (localStorage.getItem("oaiPromptUpdateURL") === "https://gamercomtwnew.bee.moe/gamer.prompts.js") {
-        localStorage.setItem("oaiPromptUpdateURL", "https://gamercomtwnew.bee.moe/gamer.prompts.json");
+    if (window.location.href.includes('forum.gamer.com.tw/B.php')) {
+        if (localStorage.getItem("oaiPromptUpdateURL") === "https://gamercomtwnew.bee.moe/gamer.prompts.js") {
+            localStorage.setItem("oaiPromptUpdateURL", "https://gamercomtwnew.bee.moe/gamer.prompts.json");
+        }
+
+    }
+}
+
+function checkTips(){
+    if (window.location.href.includes('forum.gamer.com.tw/B.php')) {
+        if (localStorage.getItem("showTips") === "true") {
+            loadTips();
+            localStorage.setItem("showTips", "false");
+        }
     }
 
-    if (localStorage.getItem("showTips") === "true") {
-        loadTips();
-        localStorage.setItem("showTips", "false");
+    if (window.location.href.includes('www.gamer.com.tw')) {
+        if (localStorage.getItem("homeTips") === "true") {
+            loadTips_home();
+            localStorage.setItem("homeTips", "false");
+        }
     }
-
 }
 
 async function addSettingElement() {
@@ -200,6 +220,17 @@ async function addSettingElement() {
         inputId: 'oaiPromptUpdateURL', labelText: '　└　oai prompt settings URL'
     }));
     lastManagementItem.appendChild(createItemCard('showTips', '重新觀看TIPs'));
+    // add one btn in a div ,click to reload the page
+    const reloadBtn = document.createElement('button');
+    reloadBtn.textContent = '重新載入';
+    reloadBtn.style.margin = '0.5rem 0 0.7rem 0.7rem';
+    reloadBtn.addEventListener('click', () => {
+        location.reload();
+    });
+    const reloadBtnDiv = document.createElement('div');
+    reloadBtnDiv.className = 'BH-rbox BH-qabox1';
+    reloadBtnDiv.appendChild(reloadBtn);
+    lastManagementItem.appendChild(reloadBtnDiv);
 
     settingsWarp.insertBefore(lastManagementItem, settingsWarp.firstChild);
 
@@ -265,11 +296,10 @@ function createItemCard(inputId, labelText, additionalContent = null) {
         input.style.margin = '0px';
         input.style.width = additionalContent.inputId.startsWith('custom_') ? 'auto' : '70px';
 
-        // 如果 localStorage 有儲存的值，則設置為該值
-        input.value = localStorage.getItem(additionalContent.inputId) || '';
 
         checkGroup.appendChild(input);
-
+        // 如果 localStorage 有儲存的值，則設置為該值
+        input.value = localStorage.getItem(additionalContent.inputId) || '';
         // 添加 input 事件監聽器，將值保存到 localStorage
         input.addEventListener('input', function () {
             localStorage.setItem(additionalContent.inputId, this.value);
@@ -317,6 +347,99 @@ async function worker_bPage() {
             bPage_addBorderInPicMode();
         }
 
+    }
+}
+
+function worker_home() {
+    if (!window.location.href.includes('www.gamer.com.tw')) {
+        return;
+    }
+    // add btn
+    const baServeElement = document.querySelector('.BA-serve');
+    const newElement = document.createElement('li');
+    newElement.innerHTML = `<a id="homeStyleSwitch" class="gtm-indexservice" title="樣式切換"><img style="pointer-events: none;" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 24 24'%3E%3Cpath fill='rgb(32,148,255)' d='M16 16v-4l5 5l-5 5v-4H4v-2zM8 2v3.999L20 6v2H8v4L3 7z'/%3E%3C/svg%3E">首頁滿版切換</a>`;
+    baServeElement.appendChild(newElement);
+    // 切換 localStorage 中 homeStyleSwitch 的值
+    newElement.addEventListener('click', () => {
+        const currentValue = localStorage.getItem("homeStyleSwitch") === "true";
+        localStorage.setItem("homeStyleSwitch", (!currentValue).toString());
+        location.reload(); // 刷新頁面以應用更改
+    });
+    // if active
+    if (localStorage.getItem("homeStyleSwitch") === "true") {
+        // Get the elements
+        const hotboardContainer = document.getElementById('hotboardContainer');
+        const guildContainer = document.getElementById('guildContainer');
+        const hothalaContainer = document.getElementById('hothalaContainer');
+
+        // Append the elements to the "hothalaContainer"
+        hothalaContainer.appendChild(hotboardContainer);
+        hothalaContainer.appendChild(guildContainer);
+
+
+        // Create a new style element
+        const newStyle = document.createElement('style');
+
+        // Set the CSS content
+        newStyle.textContent = `
+/* 父容器設置 */
+.BA-wrapper.BA-main {
+  display: flex;
+  flex-wrap: wrap;
+  width: auto;
+}
+
+/* 第一層左側固定寬度 */
+.BA-left {
+  flex: 0 0 11em;
+}
+
+/* 第一層右側容器 */
+.BA-center {
+  flex: 1;  /* 占據剩餘所有空間 */
+  display: flex;  /* 使其內部也成為flex容器 */
+  flex-wrap: wrap;  /* 允許內部元素換行 */
+}
+
+#gnnContainer {
+  flex: 0 0 45%;
+  margin: 0 1% 2% 1%;
+  order: 1;
+}
+
+#hothalaContainer {
+  flex: 45%;
+  margin: 0 1% 2% 1%;
+  order: 2;
+}
+
+#homeContainer {
+  flex: 45%;
+  margin: 0 1% 2% 1%;
+  order: 3;
+}
+#buyContainer {
+  flex: 0 0 45%;
+  margin: 0 1% 2% 1%;
+  order: 4;
+}
+#liveContainer {
+  flex: 45%;
+  margin: 0 1% 2% 1%;
+  order: 5;
+}
+#gamecrazyContainer {
+  flex: 0 0 45%;
+  margin: 0 1% 2% 1%;
+  order: 6;
+}
+.BA-cbox7 p{
+  text-align: left !important;
+}
+`;
+
+        // Append the style element to the head of the document
+        document.head.appendChild(newStyle);
     }
 }
 
@@ -668,6 +791,7 @@ function loadTips() {
     let script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js";
     script.onload = function () {
+        console.log("Driver.js loaded");
         const driver = window.driver.js.driver;
         const driverObj = driver({
             showButtons: ['next', 'previous'/*, 'close'*/],
@@ -733,6 +857,38 @@ function loadTips() {
                         driverObj.moveNext();
                     }
                 },
+            }]
+        });
+        driverObj.drive();
+    };
+    document.head.appendChild(script);
+}
+
+function loadTips_home() {
+    if (!window.location.href.includes('www.gamer.com.tw')) {
+        return;
+    }
+    let link = document.createElement('link');
+    link.rel = "stylesheet";
+    link.href = "https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css";
+    document.head.appendChild(link);
+
+    let script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js";
+
+    script.onload = function () {
+        const driver = window.driver.js.driver;
+        const driverObj = driver({
+            showButtons: ['next', 'previous'/*, 'close'*/],
+            allowClose: false,
+            nextBtnText: '▶',
+            prevBtnText: '◀',
+            doneBtnText: '好耶',
+            showProgress: true,
+            steps: [{
+                element: '#homeStyleSwitch', popover: {
+                    title: '滿版首頁', description: '點此可以切換首頁排版。'
+                }
             }]
         });
         driverObj.drive();
@@ -832,7 +988,8 @@ function addSummaryCmdBtn(postSection) {
         if (lazySummaryButtonCmd.querySelector('p').textContent === '產生中...') {
             return;
         }
-        if (localStorage.getItem("oaiKey") === "sk-yourKey" || localStorage.getItem("oaiKey") === "") {
+        let oaikeyTemp = localStorage.getItem("oaiKey");
+        if (oaikeyTemp === "sk-yourKey" || oaikeyTemp === "") {
             alert("請先設定 API Key 才能使用 AI 功能");
             return;
         }
@@ -916,7 +1073,8 @@ function addSummaryBtn(postSection) {
         if (lazySummaryButton.querySelector('p').textContent === '產生中...') {
             return;
         }
-        if (localStorage.getItem("oaiKey") === "sk-yourKey" || localStorage.getItem("oaiKey") === "") {
+        let oaikeyTemp = localStorage.getItem("oaiKey");
+        if (oaikeyTemp === "sk-yourKey" || oaikeyTemp === "") {
             alert("請先設定 API Key 才能使用 AI 功能");
             return;
         }
@@ -1023,7 +1181,8 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             // 檢查
-            if (localStorage.getItem("oaiKey") === "sk-yourKey" || localStorage.getItem("oaiKey") === "") {
+            let oaikeyTemp = localStorage.getItem("oaiKey");
+            if (oaikeyTemp === "sk-yourKey" || oaikeyTemp === "") {
                 alert("請先設定 API Key 才能使用 AI 功能");
                 return;
             }
@@ -1134,7 +1293,8 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
     askButton.addEventListener('click', async () => {
         scrollIntoBee(askButton);
         // 檢查
-        if (localStorage.getItem("oaiKey") === "sk-yourKey" || localStorage.getItem("oaiKey") === "") {
+        let oaikeyTemp = localStorage.getItem("oaiKey");
+        if (oaikeyTemp === "sk-yourKey" || oaikeyTemp === "") {
             alert("請先設定 API Key 才能使用 AI 功能");
             return;
         }
@@ -1167,9 +1327,10 @@ function addAskBtn(postSection) {// 找到 .c-post__body 元素 添加文章下�
 
 async function postGpt(promptSystem, promptUser) {
     try {
+        let oaikeyTemp = localStorage.getItem("oaiKey");
         const response = await fetch(localStorage.getItem("oaiBaseUrl"), {
             method: 'POST', headers: {
-                'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('oaiKey')}`
+                'Content-Type': 'application/json', 'Authorization': `Bearer ${oaikeyTemp}`
             }, body: JSON.stringify({
                 messages: [{
                     role: localStorage.getItem("oaiPromptSystemMode") === "true" ? "system" : "user",
@@ -1210,9 +1371,10 @@ async function postGpt(promptSystem, promptUser) {
 
 async function postGptArray(gptArray) {
     try {
+        let oaikeyTemp = localStorage.getItem("oaiKey");
         const response = await fetch(localStorage.getItem("oaiBaseUrl"), {
             method: 'POST', headers: {
-                'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('oaiKey')}`
+                'Content-Type': 'application/json', 'Authorization': `Bearer ${oaikeyTemp}`
             }, body: JSON.stringify({
                 messages: gptArray,
                 max_tokens: 4090,
@@ -1390,7 +1552,7 @@ async function popElementInit(element, show = true, anime = "ud", waitAppend = t
     element.style.beeShow = "true";
     element.style.opacity = '1';
     requestAnimationFrame(() => {
-        console.log(element.scrollWidth, '///', element.scrollHeight, '///', element.style.readWidth, '///', element.style.readHeight);
+        ///console.log(element.scrollWidth, '///', element.scrollHeight, '///', element.style.readWidth, '///', element.style.readHeight);
         element.style.maxHeight = element.style.readHeight;
     });
 }
