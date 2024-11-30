@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      8.0
+// @version      8.1
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://www.gamer.com.tw
@@ -133,7 +133,7 @@ function checkFirstRun(reset = false) {
     }
 }
 
-function checkTips(){
+function checkTips() {
     if (window.location.href.includes('forum.gamer.com.tw/B.php')) {
         if (localStorage.getItem("showTips") === "true") {
             loadTips();
@@ -371,11 +371,22 @@ function worker_home() {
         const hotboardContainer = document.getElementById('hotboardContainer');
         const guildContainer = document.getElementById('guildContainer');
         const hothalaContainer = document.getElementById('hothalaContainer');
-
         // Append the elements to the "hothalaContainer"
         hothalaContainer.appendChild(hotboardContainer);
         hothalaContainer.appendChild(guildContainer);
 
+        // 2nd left nav
+        const bahaStoreContainer = document.querySelectorAll("div.BA-lbox.BA-lbox3")[0];
+        const bahaAnimeContainer = document.querySelectorAll("div.BA-lbox.BA-lbox3")[1];
+        let secondDivLeft = document.createElement('div');
+        secondDivLeft.className = 'BA-left';
+        secondDivLeft.style.flex = '0 0 11em';
+        secondDivLeft.style.margin = '0 0 0 1em';
+        secondDivLeft.appendChild(document.querySelectorAll("h1.BA-ltitle")[1]);
+        secondDivLeft.appendChild(bahaAnimeContainer);
+        secondDivLeft.appendChild(document.querySelectorAll("h1.BA-ltitle")[0]);
+        secondDivLeft.appendChild(bahaStoreContainer);
+        document.querySelectorAll("div.BA-wrapper.BA-main")[0].insertBefore(secondDivLeft, document.querySelectorAll("div.BA-center")[0]);
 
         // Create a new style element
         const newStyle = document.createElement('style');
