@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      8.1
+// @version      8.2
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
-// @match        https://www.gamer.com.tw
+// @match        https://www.gamer.com.tw/
+// @match        https://www.gamer.com.tw/index2.php*
 // @match        https://forum.gamer.com.tw/B.php?*
 // @match        https://forum.gamer.com.tw/C.php?*
 // @homepage     https://home.gamer.com.tw/home.php?owner=bee10301
@@ -351,7 +352,7 @@ async function worker_bPage() {
 }
 
 function worker_home() {
-    if (!window.location.href.includes('www.gamer.com.tw')) {
+    if (!window.location.href.includes('www.gamer.com.tw') || !document.querySelectorAll("div.BA-lbox.BA-lbox3")) {
         return;
     }
     // add btn
