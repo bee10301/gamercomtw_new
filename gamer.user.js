@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能
 // @namespace    Bee10301
-// @version      8.3
+// @version      8.4
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://www.gamer.com.tw/
@@ -848,7 +848,7 @@ function bPage_addFunction() {
 
     // 創建外層 <td> 元素
     const td = document.createElement("td");
-    td.style.width = "5.7rem";
+    td.style.width = "auto";
 
     // 創建各個按鈕的容器和圖標
     const buttons = [
@@ -1531,13 +1531,20 @@ function addAskBtn(postSection) {
         !custom_oaiPromptChat || custom_oaiPromptChat === ""
           ? localStorage.getItem("oaiPromptChat")
           : custom_oaiPromptChat;
+      const tempSystemMode = localStorage.getItem("oaiPromptSystemMode");
       gptArray.push({
         role:
-          localStorage.getItem("oaiPromptSystemMode") === "true"
+          tempSystemMode === "true"
             ? "system"
             : "user",
         content: prompt,
       });
+      if (tempSystemMode !== "true") {
+        gptArray.push({
+          role: "system",
+          content: "好的，請提供文章。",
+        });
+      }
       gptArray.push({
         role: "user",
         content: "文章內容：\n```\n" + textContent + "\n```",
