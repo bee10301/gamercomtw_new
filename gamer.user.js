@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name 巴哈姆特_新版B頁板務功能Re
 // @namespace Bee10301
-// @version 9.0
+// @version 9.1
 // @description 巴哈姆特哈拉區新體驗。
 // @author Bee10301
 // @match https://removed.www.gamer.com.tw/
@@ -339,7 +339,7 @@ class BPageWorker {
    * 初始化預覽功能
    */
   async initializePreview() {
-    this.setupPreviewAuto();
+    await this.setupPreviewAuto();
 
     if (!this.isNewVersion && this.settings.getBool("preview_auto")) {
       await this.createPreviewFrame();
@@ -349,9 +349,9 @@ class BPageWorker {
   /**
    * 設置自動預覽
    */
-  setupPreviewAuto() {
+  async setupPreviewAuto() {
     if (this.isNewVersion) {
-      this.setupNewVersionPreview();
+      await this.setupNewVersionPreview();
     } else {
       this.setupOldVersionPreview();
     }
@@ -360,7 +360,7 @@ class BPageWorker {
   /**
    * 設置新版預覽
    */
-  setupNewVersionPreview() {
+  async setupNewVersionPreview() {
     const forumItems = document.querySelectorAll(".forum-item-info");
 
     forumItems.forEach((item) => {
@@ -370,6 +370,10 @@ class BPageWorker {
         return false;
       });
     });
+    // 如果網址帶有 snA 參數
+    if (window.location.href.includes("snA=")) {
+      await this.showNewVersionPreview();
+    }
   }
 
   /**
