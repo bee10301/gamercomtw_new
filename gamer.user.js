@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name 巴哈姆特_新版B頁板務功能Re
 // @namespace Bee10301
-// @version 9.2
+// @version 9.3
 // @description 巴哈姆特哈拉區新體驗。
 // @author Bee10301
 // @match https://removed.www.gamer.com.tw/
@@ -149,7 +149,21 @@ class BahamutePlugin {
             ? "translateX(100%)"
             : "translateX(-150%)";
       }
-      document.querySelector(".article-back").click();
+      // 棄用內建返回按鈕
+      // if (
+      //   window.getComputedStyle(document.querySelector(".article-back"))
+      //     .display !== "none"
+      // ) {
+      //   document.querySelector(".article-back").click();
+      // }
+
+      // 將網址 snA sn cPage 參數移除
+      const url = new URL(window.location.href);
+      url.searchParams.delete("snA");
+      url.searchParams.delete("sn");
+      url.searchParams.delete("cPage");
+      window.history.replaceState({}, "", url.toString());
+
       topBarCover.style.height = "0%";
       topBarCover.style.opacity = "1";
       // remove skip floor btn
@@ -362,15 +376,19 @@ class BPageWorker {
    * 設置新版預覽
    */
   async setupNewVersionPreview() {
-    const forumItems = document.querySelectorAll(".forum-item-info");
-
-    forumItems.forEach((item) => {
-      item.addEventListener("click", async (e) => {
+    const articleListContainer = document.querySelector("#list");
+    if (!articleListContainer) {
+      console.warn("⚠️ 文章列表容器未找到！");
+      return;
+    }
+    articleListContainer.addEventListener("click", async (e) => {
+      if (e.target.closest(".forum-item-info")) {
         e.preventDefault();
         await this.showNewVersionPreview();
         return false;
-      });
+      }
     });
+
     // 如果網址帶有 snA 參數
     if (window.location.href.includes("snA=")) {
       await this.showNewVersionPreview();
@@ -404,7 +422,7 @@ class BPageWorker {
           if (this.settings.getBool("addSummaryBtn")) {
             const cPageWorker = new CPageWorker(this.settings);
             await cPageWorker.addPostButtons(this.isNewVersion);
-            cPageWorker.addSkipFloorButton(cPageWorker.getPostSections());
+            cPageWorker.addSkipFloorButton();
           }
           observer.disconnect();
           resolve();
@@ -632,45 +650,64 @@ class BPageWorker {
    * 啟用清爽模式
    */
   enableCleanMode() {
-    // 移除描述和縮圖
-    const removeElements = document.querySelectorAll(
-      ".forum-item-desc, .forum-item-thumbnail"
-    );
-    removeElements.forEach((element) => element.remove());
-
-    // 調整列表項目樣式
-    const forumListItems = document.querySelectorAll(".forum-list-item");
-    forumListItems.forEach((item) => {
-      item.style.padding = "0";
-      item.style.minHeight = this.settings.get("cleanModeSize");
-    });
+    if (document.getElementById("cleanModeStyles")) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = "cleanModeStyles";
+    style.textContent = `
+    /* 移除描述和縮圖 */
+    .forum-item-desc,
+    .forum-item-thumbnail {
+      display: none !important;
+    }
+ 
+    /* 調整列表項目樣式 */
+    .forum-list-item {
+      padding: 0 !important;
+      min-height: ${this.settings.get("cleanModeSize")} !important; 
+    }
+  `;
+    document.head.appendChild(style);
   }
 
   /**
    * 設置從屬顯示
    */
   setupSlaveDisplay() {
-    const slave = document.getElementById("BH-slave");
-    if (slave) {
-      slave.style.display = "block";
+    if (document.getElementById("showSlave")) {
+      return;
     }
+    const style = document.createElement("style");
+    style.id = "showSlave";
+    style.textContent = `
+    #BH-slave {
+      display: block !important;
+    }
+  `;
+    document.head.appendChild(style);
   }
 
   /**
    * 設置順序切換
    */
   setupOrderSwitching() {
-    if (this.settings.getBool("new_design_LRSwitch")) {
-      const master = document.getElementById("BH-master");
-      const slave = document.getElementById("BH-slave");
-
-      if (master && slave) {
-        master.style.order = "2";
-        slave.style.order = "1";
-        slave.style.marginLeft = "0";
-        slave.style.marginRight = "12px";
-      }
+    if (document.getElementById("orderSwitching")) {
+      return;
     }
+    const style = document.createElement("style");
+    style.id = "orderSwitching";
+    style.textContent = `
+    #BH-master {
+      order: 2 !important;
+    }
+    #BH-slave {
+      order: 1 !important;
+      margin-left: 0 !important;
+      margin-right: 12px !important;
+    }
+  `;
+    document.head.appendChild(style);
   }
 
   /**
@@ -943,21 +980,24 @@ class BPageWorker {
    * 應用新設計
    */
   applyNewDesign() {
-    const slave = document.getElementById("BH-slave");
-    const master = document.getElementById("BH-master");
-    const testReportBtn = document.querySelector(".fixed-right");
-
-    if (slave) {
-      slave.style.width = this.settings.get("new_design_box_Right");
-      slave.style.maxWidth = "100vw";
+    if (document.getElementById("newDesignStyles")) {
+      return;
     }
-
-    if (master) {
-      master.style.width = this.settings.get("new_design_box_Left");
+    const style = document.createElement("style");
+    style.id = "newDesignStyles";
+    style.textContent = `
+    #BH-slave {
+      width: ${this.settings.get("new_design_box_Right")} !important;
+      max-width: 100vw !important;
     }
+    #BH-master {
+      width: ${this.settings.get("new_design_box_Left")} !important;
+    }
+  `;
+    document.head.appendChild(style);
 
     if (this.isNewVersion) {
-      this.applyNewVersionDesign(slave, testReportBtn);
+      this.applyNewVersionDesign();
     } else {
       this.applyOldVersionDesign();
     }
@@ -966,42 +1006,49 @@ class BPageWorker {
   /**
    * 應用新版設計
    */
-  applyNewVersionDesign(slave, testReportBtn) {
-    const forumListBox = document.getElementById("forum-list-box");
-    if (forumListBox) {
-      forumListBox.style.left = "50%";
-      forumListBox.style.transform = "translateX(-50%)";
+  applyNewVersionDesign() {
+    if (document.getElementById("newVersionStyles")) {
+      return;
     }
+    const style = document.createElement("style");
+    style.id = "newVersionStyles";
+    const slaveStyleCss = this.settings.getBool("new_design_LRSwitch")
+      ? "left: 0% !important;"
+      : "right: 0% !important;";
+    const adPositionCss = this.settings.getBool("new_design_LRSwitch")
+      ? "right: 0;"
+      : "left: 0;";
+    const showFixedRightAtLeft = this.settings.getBool("new_design_LRSwitch")
+      ? ""
+      : "left: 300px !important; right: unset !important;";
+    style.textContent = `
+    #forum-list-box {
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+    }
+    .forum-box.split .forum-list-box {
+      width: ${this.settings.get("new_design_box")} !important;
+    }
+    #BH-slave {
+      position: fixed !important;
+      bottom: 0% !important;
+      z-index: 100 !important;
+      ${slaveStyleCss}
+    }
+    #buildingAdB {
+      position: absolute !important;
+      bottom: 0 !important;
+      ${adPositionCss}
+    }
+    .fixed-right {
+      ${showFixedRightAtLeft}
+    }
+  `;
+    document.head.appendChild(style);
 
-    const forumBox = document.querySelector(".forum-box.split .forum-list-box");
-    if (forumBox) {
-      forumBox.style.width = this.settings.get("new_design_box");
-    }
-
-    if (slave) {
-      slave.style.position = "fixed";
-      slave.style.bottom = "0%";
-      const changeAdPosition = document.getElementById("buildingAdB");
-      const mainBox = document.querySelector(".forum-main");
-      if (this.settings.getBool("new_design_LRSwitch")) {
-        slave.style.left = "0%";
-        changeAdPosition.style.right = "0";
-      } else {
-        slave.style.right = "0%";
-        changeAdPosition.style.left = "0";
-      }
-      if (changeAdPosition && mainBox) {
-        //slave.prepend(changeAdPosition);
-        changeAdPosition.style.position = "absolute";
-        changeAdPosition.style.bottom = "0";
-        mainBox.prepend(changeAdPosition);
-      }
-    }
-
-    if (testReportBtn) {
-      testReportBtn.style.left = "64px";
-      testReportBtn.style.right = "unset";
-    }
+    const changeAdPosition = document.getElementById("buildingAdB");
+    const mainBox = document.querySelector(".forum-main");
+    mainBox.prepend(changeAdPosition);
   }
 
   /**
@@ -1371,7 +1418,7 @@ class CPageWorker {
   /**
    * 添加跳過樓層 - 按需檢測版本
    */
-  addSkipFloorButton(postSections) {
+  addSkipFloorButton() {
     //檢查按鈕是否已經存在
     if (document.getElementById("floating-skip-button")) {
       // remove
@@ -1383,6 +1430,8 @@ class CPageWorker {
 
     // 點擊事件處理 - 只在點擊時檢查當前樓層
     floatingSkipButton.addEventListener("click", () => {
+      const cPageWorker = new CPageWorker(this.settings);
+      const postSections = cPageWorker.getPostSections();
       const currentSection = this.findCurrentVisibleSection(postSections);
 
       if (currentSection) {
