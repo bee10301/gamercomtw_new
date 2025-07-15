@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name 巴哈姆特_新版B頁板務功能Re
 // @namespace Bee10301
-// @version 9.4
+// @version 9.5
 // @description 巴哈姆特哈拉區新體驗。
 // @author Bee10301
 // @match https://removed.www.gamer.com.tw/
@@ -169,6 +169,12 @@ class BahamutePlugin {
       topBarCover.style.opacity = "1";
       // remove skip floor btn
       document.getElementById("floating-skip-button")?.remove();
+      // remove quick replay
+      document
+        .querySelector(".article-content-box .c-editor.c-quick-reply")
+        ?.remove();
+      // remove managertools
+      document.querySelector(".article-content-box .managertools")?.remove();
       return false;
     });
 
@@ -428,12 +434,12 @@ class BPageWorker {
               .querySelector(".article-content-box")
               .appendChild(managertools.parentElement);
           }
-          const quickReply = document.querySelector(
-            ".c-editor.c-quick-reply"
-          ).parentElement;
-          document
-            .querySelector(".article-content-box")
-            .appendChild(quickReply);
+          const quickReply = document.querySelector(".c-editor.c-quick-reply");
+          if (quickReply) {
+            document
+              .querySelector(".article-content-box")
+              .appendChild(quickReply.parentElement);
+          }
           // 添加額外功能
           if (this.settings.getBool("addSummaryBtn")) {
             const cPageWorker = new CPageWorker(this.settings);
