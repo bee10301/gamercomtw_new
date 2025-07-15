@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         巴哈姆特_新版B頁板務功能Re
 // @namespace    Bee10301
-// @version      9.3
+// @version      9.4
 // @description  巴哈姆特哈拉區新體驗。
 // @author       Bee10301
 // @match        https://www.gamer.com.tw

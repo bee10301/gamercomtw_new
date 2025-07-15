@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name 巴哈姆特_新版B頁板務功能Re
 // @namespace Bee10301
-// @version 9.3
+// @version 9.4
 // @description 巴哈姆特哈拉區新體驗。
 // @author Bee10301
 // @match https://removed.www.gamer.com.tw/
 // @match https://removed.www.gamer.com.tw/index2.php*
 // @match https://forum.gamer.com.tw/B.php?*
 // @match https://forum.gamer.com.tw/C.php?*
-// @match httos://forum.gamer.com.tw/2025/?bsn*
+// @match https://forum.gamer.com.tw/2025/?bsn*
 // @homepage https://home.gamer.com.tw/home.php?owner=bee10301
 // @icon https://home.gamer.com.tw/favicon.ico
 // @connect *
@@ -85,21 +85,22 @@ class BahamutePlugin {
 
     // C頁管理工具樣式
     sheet.insertRule(
-      ".c-section:has(div.c-section__main.managertools) { position: sticky; bottom: 0; right: 0; z-index: 100; transform: translateX(50vw); transition: 0.5s cubic-bezier(0,.67,0,1.05); }",
+      ".c-section:has(div.c-section__main.managertools) { position: sticky; bottom: 0; right: 0; z-index: 100; transform: translateX(85%); transition: 0.5s cubic-bezier(0,.67,0,1.05); }",
       0
     );
     sheet.insertRule(
-      ".c-section:has(div.c-section__main.managertools):hover { transform: translateX(25vw); }",
+      ".c-section:has(div.c-section__main.managertools):hover { transform: translateX(0vw); }",
       0
     );
-
+    // C頁避免誤點上一頁
+    sheet.insertRule(".article-back { display: none !important; }", 0);
     // 快速回覆樣式
     sheet.insertRule(
-      ".c-section:has(div.c-section__main.c-editor.c-quick-reply) { position: sticky; bottom: 50px; right: 0; z-index: 99; transform: translateX(50vw); transition: 0.5s cubic-bezier(0,.67,0,1.05); }",
+      `.c-section:has(div.c-section__main.c-editor.c-quick-reply) { position: sticky; bottom: 50px; right: 0; z-index: 99; transform: translateX(85%); transition: 0.5s cubic-bezier(0,.67,0,1.05); }`,
       0
     );
     sheet.insertRule(
-      ".c-section:has(div.c-section__main.c-editor.c-quick-reply):hover { transform: translateX(20vw); }",
+      ".c-section:has(div.c-section__main.c-editor.c-quick-reply):hover { transform: translateX(0vw); }",
       0
     );
 
@@ -419,12 +420,26 @@ class BPageWorker {
     return new Promise((resolve) => {
       const observer = new MutationObserver(async (mutations) => {
         if (document.querySelectorAll(".c-section__main.c-post").length > 0) {
+          observer.disconnect();
+          // 移動快速回覆、板務工具
+          let managertools = document.querySelector(".managertools");
+          if (managertools) {
+            managertools = document
+              .querySelector(".article-content-box")
+              .appendChild(managertools.parentElement);
+          }
+          const quickReply = document.querySelector(
+            ".c-editor.c-quick-reply"
+          ).parentElement;
+          document
+            .querySelector(".article-content-box")
+            .appendChild(quickReply);
+          // 添加額外功能
           if (this.settings.getBool("addSummaryBtn")) {
             const cPageWorker = new CPageWorker(this.settings);
             await cPageWorker.addPostButtons(this.isNewVersion);
             cPageWorker.addSkipFloorButton();
           }
-          observer.disconnect();
           resolve();
         }
       });
@@ -884,7 +899,7 @@ class BPageWorker {
       bManagerDiv.appendChild(this.createCheckboxContainer());
       buttonGroups.forEach((group) => bManagerDiv.appendChild(group));
 
-      managertools.appendChild(bManagerDiv);
+      managertools.parentElement.appendChild(bManagerDiv);
     } catch (error) {
       console.warn("創建管理器選單失敗:", error);
     }
